@@ -1,0 +1,380 @@
+.section {
+  padding: 44px 48px 60px;
+  flex: 1;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 34px;
+  text-align: center;
+  margin: 0 0 32px;
+  color: var(--color-navy);
+}
+
+.stepper {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 36px;
+  position: relative;
+}
+
+.stepperLine {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-border-strong);
+  z-index: 0;
+}
+
+.stepperItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+
+.stepperCircle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  border: 2px solid transparent;
+}
+
+.stepperLabel {
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  padding: 36px 40px;
+  min-height: 340px;
+}
+
+.stepHeading {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--color-navy);
+  margin: 0 0 6px;
+}
+
+.stepSubtext {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 24px;
+}
+
+.stepSubtextTight {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 4px;
+}
+
+.optionalBadge {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--color-orange);
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.inlineRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.inlineInput {
+  flex: 1;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  font-size: 15px;
+}
+
+.verifyButton {
+  background: var(--color-navy);
+  color: var(--color-white);
+  border: none;
+  border-radius: 10px;
+  padding: 0 22px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-text-muted-2);
+  margin: 0 0 16px;
+}
+
+.successBanner {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.successIcon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-success-icon-bg);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.successText {
+  font-size: 14px;
+  color: var(--color-success-text);
+  font-weight: 600;
+}
+
+.diasGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.horasGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.choiceButton {
+  padding: 14px 8px;
+  border-radius: 10px;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-card);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.choiceButtonSelected {
+  border-color: var(--color-orange);
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+}
+
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  font-size: 15px;
+  resize: vertical;
+}
+
+.pagoOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pagoOption {
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-card);
+  cursor: pointer;
+}
+
+.pagoOptionSelected {
+  border-color: var(--color-orange);
+  background: oklch(0.97 0.03 45);
+}
+
+.pagoOptionTitle {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-text-strong);
+}
+
+.pagoOptionDesc {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.errorBanner {
+  background: oklch(0.94 0.05 25);
+  border-color: oklch(0.7 0.1 25);
+}
+
+.errorIcon {
+  background: oklch(0.55 0.15 25);
+}
+
+.errorText {
+  color: oklch(0.35 0.1 25);
+}
+
+.errorMessage {
+  color: oklch(0.5 0.18 25);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 4px 0 0;
+}
+
+.listo {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.listoIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  font-size: 28px;
+}
+
+.listoTitle {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--color-navy);
+  margin: 0 0 10px;
+}
+
+.listoText {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 28px;
+}
+
+.resumen {
+  text-align: left;
+  background: var(--color-bg);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resumenRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.resumenLabel {
+  color: var(--color-text-muted);
+}
+
+.resumenValue {
+  font-weight: 600;
+}
+
+.volverLink {
+  display: inline-block;
+  margin-top: 26px;
+  color: var(--color-orange);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.navRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.navRowActions {
+  display: flex;
+  gap: 10px;
+}
+
+.backButton {
+  background: transparent;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  padding: 12px 26px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.skipButton {
+  background: transparent;
+  border: 2px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.nextButton {
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+}
+
+.nextButtonDisabled {
+  background: var(--color-border-strong);
+  opacity: 0.7;
+  cursor: not-allowed;
+}

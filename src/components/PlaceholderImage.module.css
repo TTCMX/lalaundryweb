@@ -1,0 +1,14 @@
+.placeholder {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-stripe-a),
+    var(--color-stripe-a) 10px,
+    var(--color-stripe-b) 10px,
+    var(--color-stripe-b) 20px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, monospace;
+  color: var(--color-text-muted);
+}

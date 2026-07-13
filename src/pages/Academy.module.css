@@ -1,0 +1,98 @@
+.temas {
+  padding: 36px 48px 24px;
+}
+
+.temasGrid {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.temaCard {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.temaIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--color-navy);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.temaTitulo {
+  font-size: 17px;
+  margin: 0 0 6px;
+  color: var(--color-navy);
+}
+
+.temaDesc {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.casos {
+  padding: 24px 48px 70px;
+}
+
+.casosInner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.casosTitle {
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--color-navy);
+  margin: 0 0 20px;
+}
+
+.casosGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.casoCard {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.casoBody {
+  padding: 18px 20px;
+}
+
+.casoTipo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-orange);
+}
+
+.casoTitulo {
+  font-size: 16px;
+  margin: 8px 0 0;
+  color: var(--color-text-strong);
+}
+
+.casosFooter {
+  text-align: center;
+  color: var(--color-text-muted-2);
+  font-size: 14px;
+  margin-top: 28px;
+}

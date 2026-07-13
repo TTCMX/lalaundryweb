@@ -1,0 +1,52 @@
+import { getSupabaseClient } from '../server/supabaseClient.js';
+import { sendBookingConfirmationEmail } from '../server/email.js';
+
+// Used for the "pagar a la entrega" path — no online charge, so we can
+// confirm the booking immediately instead of waiting on a payment webhook.
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const { direccion, cp, telefono, email, diaLabel, horaLabel, detalles } = req.body || {};
+
+  if (!direccion || !cp || !telefono || !diaLabel || !horaLabel) {
+    res.status(400).json({ error: 'Missing required booking fields' });
+    return;
+  }
+
+  try {
+    const supabase = getSupabaseClient();
+
+    const { data: booking, error } = await supabase
+      .from('bookings')
+      .insert({
+        direccion,
+        cp,
+        telefono,
+        email: email || null,
+        dia_label: diaLabel,
+        hora_label: horaLabel,
+        detalles: detalles || null,
+        pago_metodo: 'entrega',
+        pago_status: 'pago_entrega',
+      })
+      .select()
+      .single();
+    if (error) throw error;
+
+    const emailResult = await sendBookingConfirmationEmail(booking);
+    if (!emailResult.skipped) {
+      await supabase
+        .from('bookings')
+        .update({ email_confirmacion_enviado: true })
+        .eq('id', booking.id);
+    }
+
+    res.status(200).json({ id: booking.id });
+  } catch (err) {
+    console.error('[create-booking]', err);
+    res.status(500).json({ error: 'internal-error' });
+  }
+}
