@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:oklch(0.97 0.015 75);font-family:'Work Sans',sans-serif;}
+    a{color:oklch(0.66 0.16 45);}
+    a:hover{color:oklch(0.58 0.16 42);}
+  </style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;color:oklch(0.26 0.02 90);">
+
+  <header style="background:oklch(0.28 0.07 250);display:flex;align-items:center;justify-content:space-between;padding:18px 48px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:40px;height:40px;border-radius:50%;border:2px dashed oklch(0.66 0.16 45);display:flex;align-items:center;justify-content:center;color:oklch(0.97 0.02 75);font-family:'Abril Fatface',serif;font-size:18px;">LL</div>
+      <span style="font-family:'Abril Fatface',serif;font-size:24px;color:oklch(0.98 0.01 75);letter-spacing:0.5px;">La Laundry</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:36px;">
+      <a href="Inicio.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Inicio</a>
+      <a href="Catalogo.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.95 0.01 75);text-decoration:none;font-weight:600;border-bottom:2px solid oklch(0.66 0.16 45);padding-bottom:4px;">Academy</a>
+      <a href="Agendar.dc.html" style="background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);text-decoration:none;font-weight:700;padding:10px 22px;border-radius:999px;">Agendar recolección</a>
+    </nav>
+  </header>
+
+  <section style="padding:56px 48px 20px;text-align:center;">
+    <span style="display:inline-block;background:oklch(0.9 0.03 45);color:oklch(0.4 0.1 45);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:999px;margin-bottom:18px;">Academy</span>
+    <h1 style="font-family:'Abril Fatface',serif;font-size:42px;margin:0 0 14px;color:oklch(0.28 0.07 250);">Aprende a cuidar tus prendas</h1>
+    <p style="font-size:16px;color:oklch(0.5 0.02 90);max-width:600px;margin:0 auto;">Casos reales: qué puedes resolver tú mismo en casa y cuándo es momento de dejarlo en nuestras manos (o cuándo ya no tiene remedio).</p>
+  </section>
+
+  <section style="padding:36px 48px 24px;">
+    <div style="max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+      <sc-for list="{{ temas }}" as="cat" hint-placeholder-count="3">
+        <div style="background:oklch(0.99 0.005 80);border:1px solid oklch(0.9 0.015 75);border-radius:14px;padding:22px;">
+          <div style="width:42px;height:42px;border-radius:50%;background:oklch(0.28 0.07 250);color:oklch(0.98 0.01 75);display:flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:14px;">{{ cat.icono }}</div>
+          <h3 style="font-size:17px;margin:0 0 6px;color:oklch(0.28 0.07 250);">{{ cat.titulo }}</h3>
+          <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0;line-height:1.5;">{{ cat.desc }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="padding:24px 48px 70px;">
+    <div style="max-width:1000px;margin:0 auto;">
+      <h2 style="font-family:'Abril Fatface',serif;font-size:26px;color:oklch(0.28 0.07 250);margin:0 0 20px;">Próximos casos</h2>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:18px;">
+        <sc-for list="{{ casos }}" as="c" hint-placeholder-count="4">
+          <div style="background:oklch(0.99 0.005 80);border:1px solid oklch(0.9 0.015 75);border-radius:14px;overflow:hidden;">
+            <div style="aspect-ratio:16/9;background:repeating-linear-gradient(45deg, oklch(0.9 0.02 75), oklch(0.9 0.02 75) 10px, oklch(0.94 0.015 75) 10px, oklch(0.94 0.015 75) 20px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:12px;color:oklch(0.5 0.02 90);">foto/video: {{ c.placeholder }}</div>
+            <div style="padding:18px 20px;">
+              <span style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:oklch(0.66 0.16 45);">{{ c.tipo }}</span>
+              <h3 style="font-size:16px;margin:8px 0 0;color:oklch(0.28 0.02 90);">{{ c.titulo }}</h3>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <p style="text-align:center;color:oklch(0.55 0.02 90);font-size:14px;margin-top:28px;">Contenido en construcción — próximamente más casos y videos.</p>
+    </div>
+  </section>
+
+  <footer style="margin-top:auto;background:oklch(0.22 0.06 250);padding:36px 48px;display:flex;justify-content:space-between;align-items:center;">
+    <span style="color:oklch(0.75 0.02 75);font-size:14px;">© 2026 La Laundry — lavandería a domicilio.</span>
+    <div style="display:flex;gap:24px;">
+      <a href="Catalogo.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Academy</a>
+      <a href="Agendar.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Agendar</a>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      temas: [
+        { icono: '✓', titulo: 'Se resuelve en casa', desc: 'Manchas frescas, olores leves y arrugas que puedes tratar tú mismo antes de que se fijen.' },
+        { icono: '!', titulo: 'Mejor déjanoslo a nosotros', desc: 'Telas delicadas, manchas viejas o prendas de tintorería que necesitan proceso profesional.' },
+        { icono: '×', titulo: 'Ya no tiene remedio', desc: 'Casos donde el daño es permanente: quemaduras, decoloración o desgaste irreversible.' },
+      ],
+      casos: [
+        { tipo: 'En casa', titulo: 'Cómo quitar una mancha de vino recién caída', placeholder: 'mancha de vino' },
+        { tipo: 'En casa', titulo: 'Eliminar olor a humedad en ropa guardada', placeholder: 'ropa guardada' },
+        { tipo: 'Déjanoslo a nosotros', titulo: 'Manchas de grasa en seda o lino', placeholder: 'tela delicada' },
+        { tipo: 'Sin remedio', titulo: 'Cuando una quemadura de plancha ya no se recupera', placeholder: 'prenda dañada' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

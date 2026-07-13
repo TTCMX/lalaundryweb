@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:oklch(0.97 0.015 75);font-family:'Work Sans',sans-serif;}
+    a{color:oklch(0.66 0.16 45);}
+    a:hover{color:oklch(0.58 0.16 42);}
+  </style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;color:oklch(0.26 0.02 90);">
+
+  <header style="background:oklch(0.28 0.07 250);display:flex;align-items:center;justify-content:space-between;padding:18px 48px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:40px;height:40px;border-radius:50%;border:2px dashed oklch(0.66 0.16 45);display:flex;align-items:center;justify-content:center;color:oklch(0.97 0.02 75);font-family:'Abril Fatface',serif;font-size:18px;">LL</div>
+      <span style="font-family:'Abril Fatface',serif;font-size:24px;color:oklch(0.98 0.01 75);letter-spacing:0.5px;">La Laundry</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:36px;">
+      <a href="Inicio.dc.html" style="color:oklch(0.95 0.01 75);text-decoration:none;font-weight:600;border-bottom:2px solid oklch(0.66 0.16 45);padding-bottom:4px;">Inicio</a>
+      <a href="Catalogo.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Academy</a>
+      <a href="Agendar.dc.html" style="background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);text-decoration:none;font-weight:700;padding:10px 22px;border-radius:999px;">Agendar recolección</a>
+    </nav>
+  </header>
+
+  <section style="position:relative;padding:90px 48px 70px;background:oklch(0.28 0.07 250);overflow:hidden;">
+    <div style="position:absolute;right:-60px;top:-60px;width:280px;height:280px;border-radius:50%;border:3px dashed oklch(0.66 0.16 45 / 0.4);"></div>
+    <div style="max-width:640px;position:relative;">
+      <span style="display:inline-block;background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:999px;margin-bottom:22px;">Recolección y entrega a domicilio</span>
+      <h1 style="font-family:'Abril Fatface',serif;font-size:56px;line-height:1.05;color:oklch(0.98 0.01 75);margin:0 0 20px;">Tu lavandería de confianza, directo a tu puerta.</h1>
+      <p style="font-size:19px;line-height:1.6;color:oklch(0.85 0.02 75);margin:0 0 34px;max-width:520px;">Lavado, tintorería y planchado con procesos claros y precios justos. Recogemos, limpiamos y entregamos en unas 72 horas.</p>
+      <div style="display:flex;gap:16px;">
+        <a href="Agendar.dc.html" style="background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);text-decoration:none;font-weight:700;padding:16px 30px;border-radius:10px;font-size:16px;">Agendar recolección</a>
+        <a href="Catalogo.dc.html" style="background:transparent;border:2px solid oklch(0.5 0.05 75);color:oklch(0.95 0.01 75);text-decoration:none;font-weight:600;padding:14px 28px;border-radius:10px;font-size:16px;">Ver catálogo y precios</a>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:64px 48px;">
+    <h2 style="font-family:'Abril Fatface',serif;font-size:32px;text-align:center;margin:0 0 44px;color:oklch(0.28 0.07 250);">Cómo funciona</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1100px;margin:0 auto;">
+      <sc-for list="{{ pasos }}" as="p" hint-placeholder-count="4">
+        <div style="text-align:center;padding:0 12px;">
+          <div style="width:64px;height:64px;border-radius:50%;background:oklch(0.99 0.005 80);border:2px solid oklch(0.66 0.16 45);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.66 0.16 45);">{{ p.n }}</div>
+          <h3 style="font-size:18px;margin:0 0 8px;color:oklch(0.28 0.07 250);">{{ p.titulo }}</h3>
+          <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0;line-height:1.5;">{{ p.desc }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="padding:60px 48px;background:oklch(0.99 0.005 80);">
+    <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;">
+      <div>
+        <span style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:oklch(0.66 0.16 45);">Aprende con nosotros</span>
+        <h2 style="font-family:'Abril Fatface',serif;font-size:30px;margin:10px 0 16px;color:oklch(0.28 0.07 250);">La Academy</h2>
+        <p style="font-size:16px;line-height:1.6;color:oklch(0.4 0.02 90);margin:0 0 24px;">Tips para cuidar tus prendas en casa, cuándo una mancha aún tiene remedio y cuándo ya no se puede salvar una prenda.</p>
+        <a href="Academy.dc.html" style="color:oklch(0.66 0.16 45);font-weight:700;text-decoration:none;">Explorar Academy →</a>
+      </div>
+      <div style="aspect-ratio:16/10;border-radius:16px;background:repeating-linear-gradient(45deg, oklch(0.9 0.02 75), oklch(0.9 0.02 75) 10px, oklch(0.94 0.015 75) 10px, oklch(0.94 0.015 75) 20px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:13px;color:oklch(0.5 0.02 90);">foto: proceso de lavado</div>
+    </div>
+  </section>
+
+  <section style="padding:64px 48px;">
+    <div style="max-width:1100px;margin:0 auto;background:oklch(0.28 0.07 250);border-radius:20px;padding:44px 48px;display:grid;grid-template-columns:1.1fr 0.9fr;gap:36px;align-items:center;">
+      <div>
+        <h2 style="font-family:'Abril Fatface',serif;font-size:28px;color:oklch(0.98 0.01 75);margin:0 0 14px;">¿Listo para agendar tu recolección?</h2>
+        <p style="font-size:15px;color:oklch(0.82 0.02 75);line-height:1.6;margin:0 0 22px;">Valida cobertura, elige horario y listo. Entrega y recolección gratis en órdenes superiores a $300.</p>
+        <a href="Agendar.dc.html" style="background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);text-decoration:none;font-weight:700;padding:14px 28px;border-radius:10px;font-size:15px;">Agendar ahora</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <sc-for list="{{ datos }}" as="d" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:baseline;border-bottom:1px solid oklch(0.4 0.05 250);padding-bottom:12px;">
+            <span style="font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.66 0.16 45);">{{ d.valor }}</span>
+            <span style="font-size:14px;color:oklch(0.82 0.02 75);">{{ d.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top:auto;background:oklch(0.22 0.06 250);padding:36px 48px;display:flex;justify-content:space-between;align-items:center;">
+    <span style="color:oklch(0.75 0.02 75);font-size:14px;">© 2026 La Laundry — lavandería a domicilio.</span>
+    <div style="display:flex;gap:24px;">
+      <a href="Catalogo.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Academy</a>
+      <a href="Agendar.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Agendar</a>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      pasos: [
+        { n: '1', titulo: 'Agenda', desc: 'Ingresa tu dirección, teléfono y horario preferido.' },
+        { n: '2', titulo: 'Recolectamos', desc: 'Pasamos por tus prendas en el horario elegido.' },
+        { n: '3', titulo: 'Limpiamos', desc: 'Clasificamos y procesamos cada prenda con cuidado.' },
+        { n: '4', titulo: 'Entregamos', desc: 'Recibes tu pedido listo en unas 72 horas.' },
+      ],
+      datos: [
+        { valor: '72h', label: 'tiempo estimado de entrega' },
+        { valor: '$300', label: 'para envío y recolección gratis' },
+        { valor: '100%', label: 'a domicilio, sin filas' },
+      ],
+    };
+  }
+}
+
+</script>
+</body>
+</html>

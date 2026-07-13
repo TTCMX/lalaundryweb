@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:oklch(0.97 0.015 75);font-family:'Work Sans',sans-serif;}
+    a{color:oklch(0.66 0.16 45);}
+    a:hover{color:oklch(0.58 0.16 42);}
+    input,textarea{font-family:'Work Sans',sans-serif;}
+    input:focus,textarea:focus{outline:2px solid oklch(0.66 0.16 45);}
+  </style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;color:oklch(0.26 0.02 90);">
+
+  <header style="background:oklch(0.28 0.07 250);display:flex;align-items:center;justify-content:space-between;padding:18px 48px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:40px;height:40px;border-radius:50%;border:2px dashed oklch(0.66 0.16 45);display:flex;align-items:center;justify-content:center;color:oklch(0.97 0.02 75);font-family:'Abril Fatface',serif;font-size:18px;">LL</div>
+      <span style="font-family:'Abril Fatface',serif;font-size:24px;color:oklch(0.98 0.01 75);letter-spacing:0.5px;">La Laundry</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:36px;">
+      <a href="Inicio.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Inicio</a>
+      <a href="Catalogo.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Academy</a>
+      <a href="Agendar.dc.html" style="background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);text-decoration:none;font-weight:700;padding:10px 22px;border-radius:999px;">Agendar recolección</a>
+    </nav>
+  </header>
+
+  <section style="padding:44px 48px 60px;flex:1;">
+    <div style="max-width:720px;margin:0 auto;">
+
+      <h1 style="font-family:'Abril Fatface',serif;font-size:34px;text-align:center;margin:0 0 32px;color:oklch(0.28 0.07 250);">Agenda tu recolección</h1>
+
+      <div style="display:flex;justify-content:space-between;margin-bottom:36px;position:relative;">
+        <div style="position:absolute;top:16px;left:0;right:0;height:2px;background:oklch(0.88 0.015 75);z-index:0;"></div>
+        <sc-for list="{{ pasos }}" as="p" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;z-index:1;flex:1;">
+            <div style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;background:{{ p.bg }};color:{{ p.color }};border:2px solid {{ p.border }};">{{ p.n }}</div>
+            <span style="font-size:12px;color:{{ p.labelColor }};font-weight:600;text-align:center;">{{ p.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:oklch(0.99 0.005 80);border:1px solid oklch(0.9 0.015 75);border-radius:18px;padding:36px 40px;min-height:340px;">
+
+        <sc-if value="{{ isDireccion }}" hint-placeholder-val="{{ true }}">
+          <h2 style="font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.28 0.07 250);margin:0 0 6px;">¿Dónde recogemos?</h2>
+          <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0 0 24px;">Ingresa tu dirección para validar si tenemos cobertura en tu zona.</p>
+          <label style="display:block;font-size:13px;font-weight:600;color:oklch(0.4 0.02 90);margin-bottom:6px;">Dirección completa</label>
+          <input type="text" value="{{ direccion }}" onChange="{{ onDireccion }}" placeholder="Calle, número, colonia" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid oklch(0.85 0.02 75);font-size:15px;margin-bottom:16px;"/>
+          <label style="display:block;font-size:13px;font-weight:600;color:oklch(0.4 0.02 90);margin-bottom:6px;">Código postal</label>
+          <div style="display:flex;gap:10px;margin-bottom:8px;">
+            <input type="text" value="{{ cp }}" onChange="{{ onCp }}" placeholder="Ej. 06700" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid oklch(0.85 0.02 75);font-size:15px;"/>
+            <button onClick="{{ verificarCobertura }}" style="background:oklch(0.28 0.07 250);color:oklch(0.98 0.01 75);border:none;border-radius:10px;padding:0 22px;font-weight:700;font-size:14px;cursor:pointer;">Verificar</button>
+          </div>
+          <p style="font-size:12px;color:oklch(0.55 0.02 90);margin:0 0 16px;">La ubicación también se confirma sobre un mapa antes de agendar.</p>
+          <div style="aspect-ratio:16/6;border-radius:12px;background:repeating-linear-gradient(45deg, oklch(0.9 0.02 75), oklch(0.9 0.02 75) 10px, oklch(0.94 0.015 75) 10px, oklch(0.94 0.015 75) 20px);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:12px;color:oklch(0.5 0.02 90);margin-bottom:18px;">mapa: confirmar ubicación exacta</div>
+
+          <sc-if value="{{ coberturaChecked }}" hint-placeholder-val="{{ false }}">
+            <div style="background:oklch(0.94 0.05 150);border:1px solid oklch(0.7 0.1 150);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;">
+              <span style="width:22px;height:22px;border-radius:50%;background:oklch(0.55 0.13 150);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">✓</span>
+              <span style="font-size:14px;color:oklch(0.3 0.06 150);font-weight:600;">¡Buenas noticias! Tenemos cobertura en tu zona.</span>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ isTelefono }}" hint-placeholder-val="{{ false }}">
+          <h2 style="font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.28 0.07 250);margin:0 0 6px;">¿A qué número te contactamos?</h2>
+          <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0 0 24px;">Usamos este número para confirmar tu recolección y avisos de entrega.</p>
+          <label style="display:block;font-size:13px;font-weight:600;color:oklch(0.4 0.02 90);margin-bottom:6px;">Teléfono</label>
+          <input type="tel" value="{{ telefono }}" onChange="{{ onTelefono }}" placeholder="55 1234 5678" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid oklch(0.85 0.02 75);font-size:15px;"/>
+        </sc-if>
+
+        <sc-if value="{{ isHorario }}" hint-placeholder-val="{{ false }}">
+          <h2 style="font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.28 0.07 250);margin:0 0 6px;">Elige día y horario</h2>
+          <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0 0 22px;">Para la recolección de tus prendas.</p>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;">
+            <sc-for list="{{ dias }}" as="d" hint-placeholder-count="3">
+              <button onClick="{{ d.select }}" style="padding:14px 8px;border-radius:10px;border:2px solid {{ d.borderColor }};background:{{ d.bg }};color:{{ d.textColor }};font-weight:600;font-size:14px;cursor:pointer;">{{ d.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+            <sc-for list="{{ horas }}" as="h" hint-placeholder-count="4">
+              <button onClick="{{ h.select }}" style="padding:12px 8px;border-radius:10px;border:2px solid {{ h.borderColor }};background:{{ h.bg }};color:{{ h.textColor }};font-weight:600;font-size:14px;cursor:pointer;">{{ h.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isDetalles }}" hint-placeholder-val="{{ false }}">
+          <h2 style="font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.28 0.07 250);margin:0 0 6px;">Agrega detalles</h2>
+          <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0 0 4px;">Opcional — instrucciones especiales para la recolección o tus prendas.</p>
+          <span style="display:inline-block;font-size:12px;color:oklch(0.66 0.16 45);font-weight:700;margin-bottom:18px;">Puedes omitir este paso</span>
+          <textarea value="{{ detalles }}" onChange="{{ onDetalles }}" placeholder="Ej. Tocar timbre 2, dejar con el portero, cuidado con botones..." rows="6" style="width:100%;box-sizing:border-box;padding:14px;border-radius:10px;border:1px solid oklch(0.85 0.02 75);font-size:15px;resize:vertical;"></textarea>
+        </sc-if>
+
+        <sc-if value="{{ isPago }}" hint-placeholder-val="{{ false }}">
+          <h2 style="font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.28 0.07 250);margin:0 0 6px;">Pago</h2>
+          <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0 0 4px;">Puedes pagar por adelantado en línea o al momento de la entrega.</p>
+          <span style="display:inline-block;font-size:12px;color:oklch(0.66 0.16 45);font-weight:700;margin-bottom:18px;">Puedes omitir este paso</span>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <button onClick="{{ elegirPagoLinea }}" style="text-align:left;padding:16px 18px;border-radius:12px;border:2px solid {{ pagoLineaBorder }};background:{{ pagoLineaBg }};cursor:pointer;">
+              <div style="font-weight:700;font-size:15px;color:oklch(0.28 0.02 90);">Pagar en línea ahora</div>
+              <div style="font-size:13px;color:oklch(0.5 0.02 90);margin-top:2px;">Adelanta tu pago con tarjeta de forma segura.</div>
+            </button>
+            <button onClick="{{ elegirPagoEntrega }}" style="text-align:left;padding:16px 18px;border-radius:12px;border:2px solid {{ pagoEntregaBorder }};background:{{ pagoEntregaBg }};cursor:pointer;">
+              <div style="font-weight:700;font-size:15px;color:oklch(0.28 0.02 90);">Pagar a la entrega</div>
+              <div style="font-size:13px;color:oklch(0.5 0.02 90);margin-top:2px;">Con tarjeta o efectivo cuando recibas tu pedido.</div>
+            </button>
+          </div>
+          <sc-if value="{{ pagoEsLinea }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:18px;padding:18px;border-radius:12px;border:1px dashed oklch(0.85 0.02 75);">
+              <div style="font-size:13px;font-weight:600;color:oklch(0.4 0.02 90);margin-bottom:10px;">Datos de tarjeta</div>
+              <input type="text" placeholder="Número de tarjeta" style="width:100%;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid oklch(0.85 0.02 75);font-size:14px;margin-bottom:10px;"/>
+              <div style="display:flex;gap:10px;">
+                <input type="text" placeholder="MM/AA" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid oklch(0.85 0.02 75);font-size:14px;"/>
+                <input type="text" placeholder="CVC" style="flex:1;box-sizing:border-box;padding:12px 14px;border-radius:10px;border:1px solid oklch(0.85 0.02 75);font-size:14px;"/>
+              </div>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{ isListo }}" hint-placeholder-val="{{ false }}">
+          <div style="text-align:center;padding:20px 0;">
+            <div style="width:64px;height:64px;border-radius:50%;background:oklch(0.94 0.05 150);color:oklch(0.4 0.13 150);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:28px;">✓</div>
+            <h2 style="font-family:'Abril Fatface',serif;font-size:26px;color:oklch(0.28 0.07 250);margin:0 0 10px;">¡Listo! Tu recolección está agendada.</h2>
+            <p style="font-size:14px;color:oklch(0.5 0.02 90);margin:0 0 28px;">Te avisaremos por SMS al número registrado cuando el repartidor esté en camino.</p>
+            <div style="text-align:left;background:oklch(0.97 0.015 75);border-radius:12px;padding:20px 24px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:oklch(0.5 0.02 90);">Dirección</span><span style="font-weight:600;">{{ resumenDireccion }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:oklch(0.5 0.02 90);">Teléfono</span><span style="font-weight:600;">{{ resumenTelefono }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:oklch(0.5 0.02 90);">Horario</span><span style="font-weight:600;">{{ resumenHorario }}</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:oklch(0.5 0.02 90);">Pago</span><span style="font-weight:600;">{{ resumenPago }}</span></div>
+            </div>
+            <a href="Inicio.dc.html" style="display:inline-block;margin-top:26px;color:oklch(0.66 0.16 45);font-weight:700;text-decoration:none;">Volver al inicio →</a>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;justify-content:space-between;margin-top:24px;">
+          <sc-if value="{{ canBack }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ atras }}" style="background:transparent;border:2px solid oklch(0.85 0.02 75);color:oklch(0.4 0.02 90);padding:12px 26px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;">Atrás</button>
+          </sc-if>
+          <sc-if value="{{ !canBack }}" hint-placeholder-val="{{ true }}"><div></div></sc-if>
+          <div style="display:flex;gap:10px;">
+            <sc-if value="{{ canSkip }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ siguiente }}" style="background:transparent;border:2px solid oklch(0.85 0.02 75);color:oklch(0.4 0.02 90);padding:12px 22px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;">Omitir</button>
+            </sc-if>
+            <button onClick="{{ siguiente }}" disabled="{{ nextDisabled }}" style="background:{{ nextBg }};color:oklch(0.18 0.03 40);padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;border:none;cursor:pointer;opacity:{{ nextOpacity }};">{{ nextLabel }}</button>
+          </div>
+        </div>
+      </sc-if>
+
+    </div>
+  </section>
+
+  <footer style="margin-top:auto;background:oklch(0.22 0.06 250);padding:36px 48px;display:flex;justify-content:space-between;align-items:center;">
+    <span style="color:oklch(0.75 0.02 75);font-size:14px;">© 2026 La Laundry — lavandería a domicilio.</span>
+    <div style="display:flex;gap:24px;">
+      <a href="Catalogo.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Academy</a>
+      <a href="Agendar.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Agendar</a>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    step: 0,
+    direccion: '',
+    cp: '',
+    coberturaChecked: false,
+    telefono: '',
+    diaSel: 0,
+    horaSel: 0,
+    detalles: '',
+    pago: null,
+  };
+
+  onDireccion = (e) => this.setState({ direccion: e.target.value });
+  onCp = (e) => this.setState({ cp: e.target.value, coberturaChecked: false });
+  onTelefono = (e) => this.setState({ telefono: e.target.value });
+  onDetalles = (e) => this.setState({ detalles: e.target.value });
+
+  verificarCobertura = () => this.setState({ coberturaChecked: true });
+  elegirPagoLinea = () => this.setState({ pago: 'linea' });
+  elegirPagoEntrega = () => this.setState({ pago: 'entrega' });
+
+  selectDia = (i) => this.setState({ diaSel: i });
+  selectHora = (i) => this.setState({ horaSel: i });
+
+  siguiente = () => this.setState(s => ({ step: Math.min(s.step + 1, 5) }));
+  atras = () => this.setState(s => ({ step: Math.max(s.step - 1, 0) }));
+
+  renderVals() {
+    const s = this.state;
+    const stepLabels = ['Dirección', 'Teléfono', 'Horario', 'Detalles', 'Pago', 'Listo'];
+    const pasos = stepLabels.map((label, i) => ({
+      n: i < s.step ? '✓' : String(i + 1),
+      label,
+      bg: i <= s.step ? 'oklch(0.66 0.16 45)' : 'oklch(0.99 0.005 80)',
+      color: i <= s.step ? 'oklch(0.18 0.03 40)' : 'oklch(0.6 0.02 90)',
+      border: i <= s.step ? 'oklch(0.66 0.16 45)' : 'oklch(0.85 0.015 75)',
+      labelColor: i === s.step ? 'oklch(0.28 0.07 250)' : 'oklch(0.6 0.02 90)',
+    }));
+
+    const diasBase = ['Mañana', 'Pasado mañana', 'En 3 días'];
+    const dias = diasBase.map((label, i) => ({
+      label,
+      select: () => this.selectDia(i),
+      bg: s.diaSel === i ? 'oklch(0.66 0.16 45)' : 'oklch(0.99 0.005 80)',
+      textColor: s.diaSel === i ? 'oklch(0.18 0.03 40)' : 'oklch(0.4 0.02 90)',
+      borderColor: s.diaSel === i ? 'oklch(0.66 0.16 45)' : 'oklch(0.85 0.015 75)',
+    }));
+
+    const horasBase = ['9:00 - 11:00', '11:00 - 13:00', '15:00 - 17:00', '17:00 - 19:00'];
+    const horas = horasBase.map((label, i) => ({
+      label,
+      select: () => this.selectHora(i),
+      bg: s.horaSel === i ? 'oklch(0.66 0.16 45)' : 'oklch(0.99 0.005 80)',
+      textColor: s.horaSel === i ? 'oklch(0.18 0.03 40)' : 'oklch(0.4 0.02 90)',
+      borderColor: s.horaSel === i ? 'oklch(0.66 0.16 45)' : 'oklch(0.85 0.015 75)',
+    }));
+
+    const nextLabels = ['Continuar', 'Continuar', 'Continuar', 'Continuar', 'Confirmar agenda', 'Listo'];
+    const requiresDireccion = s.step === 0 && (!s.direccion || !s.coberturaChecked);
+    const requiresTelefono = s.step === 1 && !s.telefono;
+    const nextDisabled = requiresDireccion || requiresTelefono;
+
+    return {
+      pasos,
+      isDireccion: s.step === 0,
+      isTelefono: s.step === 1,
+      isHorario: s.step === 2,
+      isDetalles: s.step === 3,
+      isPago: s.step === 4,
+      isListo: s.step === 5,
+
+      direccion: s.direccion,
+      onDireccion: this.onDireccion,
+      cp: s.cp,
+      onCp: this.onCp,
+      verificarCobertura: this.verificarCobertura,
+      coberturaChecked: s.coberturaChecked,
+
+      telefono: s.telefono,
+      onTelefono: this.onTelefono,
+
+      dias,
+      horas,
+
+      detalles: s.detalles,
+      onDetalles: this.onDetalles,
+
+      elegirPagoLinea: this.elegirPagoLinea,
+      elegirPagoEntrega: this.elegirPagoEntrega,
+      pagoLineaBorder: s.pago === 'linea' ? 'oklch(0.66 0.16 45)' : 'oklch(0.85 0.015 75)',
+      pagoLineaBg: s.pago === 'linea' ? 'oklch(0.97 0.03 45)' : 'oklch(0.99 0.005 80)',
+      pagoEntregaBorder: s.pago === 'entrega' ? 'oklch(0.66 0.16 45)' : 'oklch(0.85 0.015 75)',
+      pagoEntregaBg: s.pago === 'entrega' ? 'oklch(0.97 0.03 45)' : 'oklch(0.99 0.005 80)',
+      pagoEsLinea: s.pago === 'linea',
+
+      resumenDireccion: s.direccion || 'Sin especificar',
+      resumenTelefono: s.telefono || 'Sin especificar',
+      resumenHorario: `${diasBase[s.diaSel]}, ${horasBase[s.horaSel]}`,
+      resumenPago: s.pago === 'linea' ? 'Pagado en línea' : 'Pago a la entrega',
+
+      showNav: s.step < 5,
+      canBack: s.step > 0,
+      canSkip: s.step === 3 || s.step === 4,
+      siguiente: this.siguiente,
+      atras: this.atras,
+      nextLabel: nextLabels[s.step],
+      nextDisabled,
+      nextBg: nextDisabled ? 'oklch(0.85 0.02 75)' : 'oklch(0.66 0.16 45)',
+      nextOpacity: nextDisabled ? '0.7' : '1',
+    };
+  }
+}
+
+</script>
+</body>
+</html>

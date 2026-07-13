@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:oklch(0.97 0.015 75);font-family:'Work Sans',sans-serif;}
+    a{color:oklch(0.66 0.16 45);}
+    a:hover{color:oklch(0.58 0.16 42);}
+  </style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;color:oklch(0.26 0.02 90);">
+
+  <header style="background:oklch(0.28 0.07 250);display:flex;align-items:center;justify-content:space-between;padding:18px 48px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:40px;height:40px;border-radius:50%;border:2px dashed oklch(0.66 0.16 45);display:flex;align-items:center;justify-content:center;color:oklch(0.97 0.02 75);font-family:'Abril Fatface',serif;font-size:18px;">LL</div>
+      <span style="font-family:'Abril Fatface',serif;font-size:24px;color:oklch(0.98 0.01 75);letter-spacing:0.5px;">La Laundry</span>
+    </div>
+    <nav style="display:flex;align-items:center;gap:36px;">
+      <a href="Inicio.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Inicio</a>
+      <a href="Catalogo.dc.html" style="color:oklch(0.95 0.01 75);text-decoration:none;font-weight:600;border-bottom:2px solid oklch(0.66 0.16 45);padding-bottom:4px;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.85 0.01 75);text-decoration:none;font-weight:500;">Academy</a>
+      <a href="Agendar.dc.html" style="background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);text-decoration:none;font-weight:700;padding:10px 22px;border-radius:999px;">Agendar recolección</a>
+    </nav>
+  </header>
+
+  <section style="padding:56px 48px 20px;text-align:center;">
+    <span style="display:inline-block;background:oklch(0.9 0.03 45);color:oklch(0.4 0.1 45);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:6px 14px;border-radius:999px;margin-bottom:18px;">Catálogo</span>
+    <h1 style="font-family:'Abril Fatface',serif;font-size:42px;margin:0 0 14px;color:oklch(0.28 0.07 250);">Precios y procesos</h1>
+    <p style="font-size:16px;color:oklch(0.5 0.02 90);max-width:560px;margin:0 auto;">Precios claros por prenda. Recolección y entrega gratis en órdenes superiores a $300.</p>
+  </section>
+
+  <section style="padding:20px 48px 10px;">
+    <div style="max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;">
+      <sc-for list="{{ proceso }}" as="p" hint-placeholder-count="4">
+        <div style="background:oklch(0.99 0.005 80);border:1px solid oklch(0.9 0.015 75);border-radius:14px;padding:20px;text-align:center;">
+          <div style="width:44px;height:44px;border-radius:50%;background:oklch(0.28 0.07 250);color:oklch(0.98 0.01 75);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-weight:700;">{{ p.n }}</div>
+          <div style="font-weight:600;font-size:14px;color:oklch(0.28 0.07 250);">{{ p.titulo }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="padding:36px 48px 70px;">
+    <div style="max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:44px;">
+
+      <sc-for list="{{ categorias }}" as="cat" hint-placeholder-count="3">
+        <div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid oklch(0.28 0.07 250);padding-bottom:10px;margin-bottom:6px;">
+            <h2 style="font-family:'Abril Fatface',serif;font-size:26px;color:oklch(0.28 0.07 250);margin:0;">{{ cat.nombre }}</h2>
+            <span style="font-size:13px;color:oklch(0.66 0.16 45);font-weight:600;">{{ cat.nota }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px;">
+            <sc-for list="{{ cat.items }}" as="it" hint-placeholder-count="6">
+              <div style="background:oklch(0.99 0.005 80);border:1px solid oklch(0.9 0.015 75);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:12px;">
+                <div>
+                  <div style="font-weight:600;font-size:15px;color:oklch(0.28 0.02 90);">{{ it.nombre }}</div>
+                  <sc-if value="{{ it.detalle }}" hint-placeholder-val="{{ true }}">
+                    <div style="font-size:13px;color:oklch(0.55 0.02 90);margin-top:4px;">{{ it.detalle }}</div>
+                  </sc-if>
+                </div>
+                <div style="font-family:'Abril Fatface',serif;font-size:18px;color:oklch(0.66 0.16 45);white-space:nowrap;">{{ it.precio }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+    </div>
+  </section>
+
+  <section style="padding:0 48px 70px;">
+    <div style="max-width:1000px;margin:0 auto;background:oklch(0.28 0.07 250);border-radius:18px;padding:34px 40px;display:flex;justify-content:space-between;align-items:center;gap:24px;">
+      <div>
+        <h3 style="font-family:'Abril Fatface',serif;font-size:22px;color:oklch(0.98 0.01 75);margin:0 0 6px;">¿Ya sabes qué necesitas lavar?</h3>
+        <p style="font-size:14px;color:oklch(0.82 0.02 75);margin:0;">Agenda tu recolección en menos de 2 minutos.</p>
+      </div>
+      <a href="Agendar.dc.html" style="background:oklch(0.66 0.16 45);color:oklch(0.18 0.03 40);text-decoration:none;font-weight:700;padding:14px 26px;border-radius:10px;font-size:15px;white-space:nowrap;">Agendar recolección</a>
+    </div>
+  </section>
+
+  <footer style="margin-top:auto;background:oklch(0.22 0.06 250);padding:36px 48px;display:flex;justify-content:space-between;align-items:center;">
+    <span style="color:oklch(0.75 0.02 75);font-size:14px;">© 2026 La Laundry — lavandería a domicilio.</span>
+    <div style="display:flex;gap:24px;">
+      <a href="Catalogo.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Catálogo</a>
+      <a href="Academy.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Academy</a>
+      <a href="Agendar.dc.html" style="color:oklch(0.8 0.02 75);font-size:14px;text-decoration:none;">Agendar</a>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const proceso = [
+      { n: '1', titulo: 'Recolectamos' },
+      { n: '2', titulo: 'Clasificamos' },
+      { n: '3', titulo: 'Limpiamos' },
+      { n: '4', titulo: 'Entregamos' },
+    ];
+
+    const categorias = [
+      {
+        nombre: 'Lavandería',
+        nota: 'Recolección y entrega gratis en órdenes +$300 · ~72h',
+        items: [
+          { nombre: 'Ropa y ropa de cama', precio: '$40', detalle: 'Por kg' },
+          { nombre: 'Edredón', precio: '$160', detalle: 'Matrimonial +$10, Queen +$20, King +$30, Pluma +$55' },
+          { nombre: 'Tenis', precio: '$150', detalle: '' },
+          { nombre: 'Gorras', precio: '$80', detalle: 'Gamuza y ante +$20' },
+          { nombre: 'Almohada', precio: '$170', detalle: 'Queen y King +$30' },
+          { nombre: 'Mochila', precio: '$140', detalle: 'Maleta o grande +$30, cuero +$40' },
+          { nombre: 'Cubrecolchón', precio: '$300', detalle: 'Matrimonial +$30, Queen +$70, King +$100' },
+          { nombre: 'Sneakers — lavado en seco', precio: '$250', detalle: '' },
+          { nombre: 'Botas — lavado en seco', precio: '$300', detalle: '' },
+          { nombre: 'Bolsas — mantenimiento', precio: 'Desde $250', detalle: '' },
+        ],
+      },
+      {
+        nombre: 'Tintorería',
+        nota: 'Recolección y entrega gratis en órdenes +$300',
+        items: [
+          { nombre: 'Saco', precio: '$140', detalle: '' },
+          { nombre: 'Vestido', precio: '$200', detalle: '' },
+          { nombre: 'Suéter', precio: '$130', detalle: '' },
+          { nombre: 'Pantalón', precio: '$140', detalle: '' },
+          { nombre: 'Falda', precio: '$110', detalle: '' },
+          { nombre: 'Camisa', precio: '$110', detalle: '' },
+          { nombre: 'Abrigo', precio: '$230', detalle: '' },
+          { nombre: 'Gabardina', precio: '$250', detalle: '' },
+          { nombre: 'Corbata', precio: '$110', detalle: '' },
+          { nombre: 'Bolsas', precio: '$140', detalle: '' },
+          { nombre: 'Chamarra de piel', precio: '$900', detalle: '' },
+          { nombre: 'Seda o lino', precio: '+$40', detalle: 'Recargo sobre prenda de tintorería' },
+        ],
+      },
+      {
+        nombre: 'Otros servicios',
+        nota: 'Recolección y entrega gratis en órdenes +$300',
+        items: [
+          { nombre: 'Planchado', precio: '$35', detalle: '' },
+          { nombre: 'Planchado largo', precio: '$60', detalle: '' },
+          { nombre: 'Desmanchado', precio: '$100', detalle: 'Por pieza' },
+          { nombre: 'Planchado de mantel', precio: '$140', detalle: 'Por m²' },
+          { nombre: 'Transporte sencillo', precio: '$70', detalle: '' },
+          { nombre: 'Suelas amarillas', precio: '$150', detalle: '' },
+          { nombre: 'Lavado a mano', precio: '$70', detalle: 'Por prenda' },
+          { nombre: 'Bolsa', precio: 'Desde $140', detalle: '' },
+          { nombre: 'Teñido', precio: 'Desde $300', detalle: '' },
+          { nombre: 'Vestido de novia', precio: 'Desde $1,500', detalle: '' },
+          { nombre: 'Lavado enzimático', precio: 'Desde $100', detalle: '' },
+        ],
+      },
+    ];
+
+    return { proceso, categorias };
+  }
+}
+
+</script>
+</body>
+</html>
