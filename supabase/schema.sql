@@ -43,10 +43,23 @@ create table if not exists bookings (
 create index if not exists bookings_mercadopago_preference_id_idx
   on bookings (mercadopago_preference_id);
 
+-- Every address checked that falls outside coverage_zips — not a booking,
+-- just a demand signal for planning which zones to expand into next.
+create table if not exists coverage_leads (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  direccion text,
+  cp text not null,
+  place_id text,
+  lat double precision,
+  lng double precision
+);
+
 -- Service-role key (used by the /api functions) bypasses RLS, but enabling
 -- it keeps the tables safe in case the anon key is ever exposed elsewhere.
 alter table coverage_zips enable row level security;
 alter table bookings enable row level security;
+alter table coverage_leads enable row level security;
 
 -- Migration: if you ran this file before the Google Places integration was
 -- added, run this block once to add the new columns to your existing table

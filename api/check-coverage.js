@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { cp } = req.body || {};
+  const { cp, direccion, placeId, lat, lng } = req.body || {};
   if (!cp || typeof cp !== 'string') {
     res.status(400).json({ error: 'cp is required' });
     return;
@@ -34,7 +34,21 @@ export default async function handler(req, res) {
       .maybeSingle();
     if (error) throw error;
 
-    res.status(200).json({ covered: !!data });
+    const covered = !!data;
+
+    // Not a booking — just a demand signal for planning future coverage.
+    if (!covered) {
+      const { error: leadError } = await supabase.from('coverage_leads').insert({
+        direccion: direccion || null,
+        cp: cp.trim(),
+        place_id: placeId || null,
+        lat: lat ?? null,
+        lng: lng ?? null,
+      });
+      if (leadError) console.error('[check-coverage] failed to log lead:', leadError);
+    }
+
+    res.status(200).json({ covered });
   } catch (err) {
     console.error('[check-coverage]', err);
     res.status(500).json({ error: 'internal-error' });

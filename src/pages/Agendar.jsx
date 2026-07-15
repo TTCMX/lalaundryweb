@@ -69,14 +69,14 @@ export default function Agendar() {
   const direccionInputRef = useRef(null);
   const mapRef = useRef(null);
 
-  const checkCoverageFor = async (candidateCp) => {
+  const checkCoverageFor = async (candidateCp, extra = {}) => {
     if (!candidateCp?.trim()) return;
     setCobertura('checking');
     try {
       const res = await fetch('/api/check-coverage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cp: candidateCp.trim() }),
+        body: JSON.stringify({ cp: candidateCp.trim(), ...extra }),
       });
       const data = await res.json();
       setCobertura(data.covered ? 'covered' : 'not-covered');
@@ -85,7 +85,16 @@ export default function Agendar() {
     }
   };
 
-  const verificarCobertura = () => checkCoverageFor(cp);
+  // Fallback for when a Maps suggestion was never picked (script blocked,
+  // typed and ignored the dropdown, etc.) — best-effort CP from the text.
+  const handleDireccionBlur = () => {
+    if (place) return;
+    const match = direccion.match(/\b\d{5}\b/);
+    if (match) {
+      setCp(match[0]);
+      checkCoverageFor(match[0], { direccion });
+    }
+  };
 
   // Attach Google Places Autocomplete to the address input so customers pick
   // a real, verified address instead of typing free text.
@@ -111,7 +120,12 @@ export default function Agendar() {
           });
           if (postal) {
             setCp(postal);
-            checkCoverageFor(postal);
+            checkCoverageFor(postal, {
+              direccion: p.formatted_address || direccionInputRef.current.value,
+              placeId: p.place_id,
+              lat: p.geometry.location.lat(),
+              lng: p.geometry.location.lng(),
+            });
           } else {
             setCobertura('idle');
           }
@@ -239,29 +253,11 @@ export default function Agendar() {
                 onChange={(e) => {
                   setDireccion(e.target.value);
                   setPlace(null);
+                  setCobertura('idle');
                 }}
+                onBlur={handleDireccionBlur}
                 placeholder="Empieza a escribir tu calle y elige una sugerencia"
               />
-              <label className={styles.label}>Código postal</label>
-              <div className={styles.inlineRow}>
-                <input
-                  type="text"
-                  className={styles.inlineInput}
-                  value={cp}
-                  onChange={(e) => {
-                    setCp(e.target.value);
-                    setCobertura('idle');
-                  }}
-                  placeholder="Ej. 06700"
-                />
-                <button
-                  className={styles.verifyButton}
-                  onClick={verificarCobertura}
-                  disabled={cobertura === 'checking'}
-                >
-                  {cobertura === 'checking' ? 'Verificando…' : 'Verificar'}
-                </button>
-              </div>
               <p className={styles.hint}>
                 La ubicación también se confirma sobre un mapa antes de agendar.
               </p>
@@ -279,6 +275,9 @@ export default function Agendar() {
                   style={{ marginBottom: 18 }}
                 />
               )}
+              {cobertura === 'checking' && (
+                <p className={styles.hint}>Verificando cobertura…</p>
+              )}
               {cobertura === 'covered' && (
                 <div className={styles.successBanner}>
                   <span className={styles.successIcon}>✓</span>
@@ -291,7 +290,8 @@ export default function Agendar() {
                 <div className={cx(styles.successBanner, styles.errorBanner)}>
                   <span className={cx(styles.successIcon, styles.errorIcon)}>×</span>
                   <span className={cx(styles.successText, styles.errorText)}>
-                    Todavía no tenemos cobertura en ese código postal.
+                    Todavía no tenemos cobertura en ese código postal. Guardamos tu ubicación para
+                    avisarte cuando lleguemos a tu zona.
                   </span>
                 </div>
               )}
