@@ -1,5 +1,16 @@
 import { Resend } from 'resend';
 
+const COLOR_BG = '#dcf5f6';
+const COLOR_CARD = '#ffffff';
+const COLOR_NAVY = '#506d6b';
+const COLOR_NAVY_DARK = '#3d5452';
+const COLOR_ORANGE = '#f37562';
+const COLOR_ORANGE_ON = '#1c2625';
+const COLOR_TEXT_MUTED = '#7c9997';
+const COLOR_BORDER = '#cdeaec';
+const FONT_DISPLAY = "'Abril Fatface', Georgia, 'Times New Roman', serif";
+const FONT_BODY = "'Work Sans', Arial, Helvetica, sans-serif";
+
 function getResend() {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -9,26 +20,77 @@ function getResend() {
   return new Resend(apiKey);
 }
 
-function formatBookingHtml(booking) {
-  const pagoLabel =
-    booking.pago_status === 'pagado'
-      ? `Depósito pagado en línea (${booking.deposito_monto ? `$${booking.deposito_monto} MXN` : ''})`
-      : 'Pago a la entrega (tarjeta o efectivo)';
+function pagoLabelFor(booking) {
+  return booking.pago_status === 'pagado'
+    ? `Depósito pagado en línea${booking.deposito_monto ? ` ($${booking.deposito_monto} MXN)` : ''}`
+    : 'Pago a la entrega (tarjeta o efectivo)';
+}
 
+function renderRows(rows) {
+  return rows
+    .filter((row) => row.value)
+    .map(
+      (row, i) => `
+        <tr>
+          <td style="padding:12px 20px;${i > 0 ? `border-top:1px solid ${COLOR_BORDER};` : ''}font-family:${FONT_BODY};font-size:13px;color:${COLOR_TEXT_MUTED};white-space:nowrap;vertical-align:top;">${row.label}</td>
+          <td style="padding:12px 20px;${i > 0 ? `border-top:1px solid ${COLOR_BORDER};` : ''}font-family:${FONT_BODY};font-size:14px;font-weight:600;color:${COLOR_ORANGE_ON};text-align:right;">${row.value}</td>
+        </tr>
+      `
+    )
+    .join('');
+}
+
+// Shared shell (header with logo + white card body + footer) so the
+// customer confirmation and the owner notification look like the same
+// brand instead of a bare table, matching the site's mint/coral/teal look.
+function renderEmailShell({ eyebrow, heading, intro, rows, footerNote }) {
   return `
-    <div style="font-family:sans-serif;color:#1a1a1a;">
-      <h2 style="color:#1c3a63;">¡Tu recolección está agendada!</h2>
-      <p>Te avisaremos cuando el repartidor esté en camino.</p>
-      <table style="border-collapse:collapse;margin-top:16px;">
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Nombre</td><td style="font-weight:600;">${booking.nombre || 'No proporcionado'}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Dirección</td><td style="font-weight:600;">${booking.direccion}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Teléfono</td><td style="font-weight:600;">${booking.telefono}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Horario</td><td style="font-weight:600;">${booking.dia_label}, ${booking.hora_label}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Pago</td><td style="font-weight:600;">${pagoLabel}</td></tr>
+    <div style="background:${COLOR_BG};padding:32px 16px;font-family:${FONT_BODY};">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;border-collapse:collapse;">
+        <tr>
+          <td style="background:${COLOR_NAVY};border-radius:16px 16px 0 0;padding:20px 24px;">
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="width:36px;height:36px;border-radius:50%;border:2px dashed ${COLOR_ORANGE};text-align:center;vertical-align:middle;font-family:${FONT_DISPLAY};font-size:14px;color:#f2fbfb;">LL</td>
+                <td style="padding-left:10px;font-family:${FONT_DISPLAY};font-size:20px;color:#ffffff;">La Laundry</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:${COLOR_CARD};padding:32px 24px;">
+            <span style="display:inline-block;background:#fbe0da;color:#a84a37;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:999px;font-family:${FONT_BODY};">${eyebrow}</span>
+            <h1 style="font-family:${FONT_DISPLAY};font-size:24px;color:${COLOR_NAVY};margin:16px 0 8px;">${heading}</h1>
+            <p style="font-family:${FONT_BODY};font-size:14px;line-height:1.6;color:#43605e;margin:0 0 24px;">${intro}</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLOR_BG};border-radius:12px;border-collapse:collapse;overflow:hidden;">
+              ${renderRows(rows)}
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:${COLOR_NAVY_DARK};border-radius:0 0 16px 16px;padding:18px 24px;">
+            <p style="margin:0;font-family:${FONT_BODY};font-size:12px;color:#a8cbc9;">${footerNote}</p>
+          </td>
+        </tr>
       </table>
-      <p style="margin-top:24px;color:#666;font-size:13px;">La Laundry — lavandería a domicilio.</p>
     </div>
   `;
+}
+
+export function formatBookingHtml(booking) {
+  return renderEmailShell({
+    eyebrow: 'Recolección agendada',
+    heading: '¡Tu recolección está agendada!',
+    intro: 'Te avisaremos cuando el repartidor esté en camino.',
+    rows: [
+      { label: 'Nombre', value: booking.nombre },
+      { label: 'Dirección', value: booking.direccion },
+      { label: 'Teléfono', value: booking.telefono },
+      { label: 'Horario', value: `${booking.dia_label}, ${booking.hora_label}` },
+      { label: 'Pago', value: pagoLabelFor(booking) },
+    ],
+    footerNote: 'La Laundry — lavandería a domicilio.',
+  });
 }
 
 export async function sendBookingConfirmationEmail(booking) {
@@ -53,28 +115,23 @@ export async function sendBookingConfirmationEmail(booking) {
   }
 }
 
-function formatOwnerNotificationHtml(booking) {
-  const pagoLabel =
-    booking.pago_status === 'pagado'
-      ? `Depósito pagado en línea (${booking.deposito_monto ? `$${booking.deposito_monto} MXN` : ''})`
-      : 'Pago a la entrega (tarjeta o efectivo)';
-
-  return `
-    <div style="font-family:sans-serif;color:#1a1a1a;">
-      <h2 style="color:#1c3a63;">Nueva recolección agendada</h2>
-      <table style="border-collapse:collapse;margin-top:16px;">
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Nombre</td><td style="font-weight:600;">${booking.nombre || 'No proporcionado'}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Dirección</td><td style="font-weight:600;">${booking.direccion}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Código postal</td><td style="font-weight:600;">${booking.cp}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Teléfono</td><td style="font-weight:600;">${booking.telefono}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Correo del cliente</td><td style="font-weight:600;">${booking.email || 'No proporcionado'}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Horario</td><td style="font-weight:600;">${booking.dia_label}, ${booking.hora_label}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Detalles</td><td style="font-weight:600;">${booking.detalles || 'Ninguno'}</td></tr>
-        <tr><td style="padding:6px 12px 6px 0;color:#666;">Pago</td><td style="font-weight:600;">${pagoLabel}</td></tr>
-      </table>
-      <p style="margin-top:24px;color:#666;font-size:13px;">ID de reserva: ${booking.id}</p>
-    </div>
-  `;
+export function formatOwnerNotificationHtml(booking) {
+  return renderEmailShell({
+    eyebrow: 'Nueva recolección',
+    heading: 'Nueva recolección agendada',
+    intro: `ID de reserva: ${booking.id}`,
+    rows: [
+      { label: 'Nombre', value: booking.nombre || 'No proporcionado' },
+      { label: 'Dirección', value: booking.direccion },
+      { label: 'Código postal', value: booking.cp },
+      { label: 'Teléfono', value: booking.telefono },
+      { label: 'Correo del cliente', value: booking.email || 'No proporcionado' },
+      { label: 'Horario', value: `${booking.dia_label}, ${booking.hora_label}` },
+      { label: 'Detalles', value: booking.detalles || 'Ninguno' },
+      { label: 'Pago', value: pagoLabelFor(booking) },
+    ],
+    footerNote: 'La Laundry — panel interno.',
+  });
 }
 
 export async function sendOwnerBookingNotification(booking) {
