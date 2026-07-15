@@ -14,9 +14,10 @@ export function getSupabaseClient() {
     );
   }
 
-  // Trailing slashes/whitespace in the env var produce double slashes in the
-  // PostgREST request path, which the server rejects (PGRST125).
-  const url = rawUrl.trim().replace(/\/+$/, '');
+  // createClient() wants the bare project URL and appends /rest/v1 itself.
+  // A pasted REST URL (with /rest/v1 already on it) or a trailing slash
+  // produces a duplicated/invalid path, which the server rejects (PGRST125).
+  const url = rawUrl.trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 
   client = createClient(url, serviceRoleKey, {
     auth: { persistSession: false },
