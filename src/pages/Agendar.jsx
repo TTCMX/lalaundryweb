@@ -1,18 +1,56 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PlaceholderImage from '../components/PlaceholderImage.jsx';
 import styles from './Agendar.module.css';
 
 const STEP_LABELS = ['Dirección', 'Teléfono', 'Horario', 'Detalles', 'Pago', 'Listo'];
-const DIAS = ['Mañana', 'Pasado mañana', 'En 3 días'];
-const HORAS = ['9:00 - 11:00', '11:00 - 13:00', '15:00 - 17:00', '17:00 - 19:00'];
+const DIA_OFFSETS = [
+  { offset: 1, relative: 'Mañana' },
+  { offset: 2, relative: 'Pasado mañana' },
+  { offset: 3, relative: 'En 3 días' },
+];
+const HORA_RANGES = [
+  { start: 9, end: 11 },
+  { start: 11, end: 13 },
+  { start: 15, end: 17 },
+  { start: 17, end: 19 },
+];
 const NEXT_LABELS = ['Continuar', 'Continuar', 'Continuar', 'Continuar', 'Confirmar agenda', 'Listo'];
 
 function cx(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+function formatHour12(hour) {
+  const period = hour < 12 ? 'am' : 'pm';
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}${period}`;
+}
+
+function formatHoraRange({ start, end }) {
+  return `${formatHour12(start)}-${formatHour12(end)}`;
+}
+
+function buildDiaOptions() {
+  const today = new Date();
+  return DIA_OFFSETS.map(({ offset, relative }) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + offset);
+    const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(date);
+    const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(date);
+    const day = date.getDate();
+    return {
+      relative,
+      short: `${day} ${month.slice(0, 3)}`,
+      fullLabel: `${weekday} ${day} de ${month}`,
+    };
+  });
+}
+
+const HORAS = HORA_RANGES.map((range) => ({ ...range, label: formatHoraRange(range) }));
+
 export default function Agendar() {
+  const DIAS = useMemo(buildDiaOptions, []);
   const [step, setStep] = useState(0);
   const [direccion, setDireccion] = useState('');
   const [cp, setCp] = useState('');
@@ -53,8 +91,8 @@ export default function Agendar() {
       cp,
       telefono,
       email: email || undefined,
-      diaLabel: DIAS[diaSel],
-      horaLabel: HORAS[horaSel],
+      diaLabel: DIAS[diaSel].fullLabel,
+      horaLabel: HORAS[horaSel].label,
       detalles: detalles || undefined,
     };
 
@@ -219,24 +257,25 @@ export default function Agendar() {
               <h2 className={styles.stepHeading}>Elige día y horario</h2>
               <p className={styles.stepSubtext}>Para la recolección de tus prendas.</p>
               <div className={styles.diasGrid}>
-                {DIAS.map((label, i) => (
+                {DIAS.map((dia, i) => (
                   <button
-                    key={label}
+                    key={dia.relative}
                     className={cx(styles.choiceButton, diaSel === i && styles.choiceButtonSelected)}
                     onClick={() => setDiaSel(i)}
                   >
-                    {label}
+                    <div>{dia.relative}</div>
+                    <div className={styles.choiceButtonSubtext}>{dia.short}</div>
                   </button>
                 ))}
               </div>
               <div className={styles.horasGrid}>
-                {HORAS.map((label, i) => (
+                {HORAS.map((hora, i) => (
                   <button
-                    key={label}
+                    key={hora.label}
                     className={cx(styles.choiceButton, horaSel === i && styles.choiceButtonSelected)}
                     onClick={() => setHoraSel(i)}
                   >
-                    {label}
+                    {hora.label}
                   </button>
                 ))}
               </div>
@@ -310,7 +349,7 @@ export default function Agendar() {
                 <div className={styles.resumenRow}>
                   <span className={styles.resumenLabel}>Horario</span>
                   <span className={styles.resumenValue}>
-                    {DIAS[diaSel]}, {HORAS[horaSel]}
+                    {DIAS[diaSel].fullLabel}, {HORAS[horaSel].label}
                   </span>
                 </div>
                 <div className={styles.resumenRow}>
