@@ -25,6 +25,7 @@ export default async function handler(req, res) {
     placeId,
     lat,
     lng,
+    esRecurrente,
   } = req.body || {};
 
   if (!direccion || !cp || !telefono || !diaLabel || !horaLabel) {
@@ -58,6 +59,7 @@ export default async function handler(req, res) {
       place_id: placeId || null,
       lat: lat ?? null,
       lng: lng ?? null,
+      es_recurrente: !!esRecurrente,
     };
 
     // If a lead was already created earlier in the flow, finalize that same

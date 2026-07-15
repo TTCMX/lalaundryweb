@@ -77,6 +77,8 @@ export default function Agendar() {
   const [submitError, setSubmitError] = useState('');
   const [slotCounts, setSlotCounts] = useState({});
   const [slotMax, setSlotMax] = useState(5);
+  const [esRecurrente, setEsRecurrente] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
 
   const direccionInputRef = useRef(null);
   const mapRef = useRef(null);
@@ -214,10 +216,46 @@ export default function Agendar() {
   const siguiente = () => setStep((s) => Math.min(s + 1, LAST_STEP));
   const atras = () => setStep((s) => Math.max(s - 1, 0));
 
+  // On the phone step, check whether this number matches a previous real
+  // booking — if so, skip straight to Horario with their info on file
+  // instead of re-asking for address/name.
+  const lookupAndAdvance = async () => {
+    setLookingUp(true);
+    try {
+      const res = await fetch('/api/lookup-customer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telefono }),
+      });
+      const data = res.ok ? await res.json() : { found: false };
+      if (data.found) {
+        const c = data.customer;
+        setNombre(c.nombre || '');
+        setDireccion(c.direccion || '');
+        setCp(c.cp || '');
+        setEmail((prev) => prev || c.email || '');
+        if (c.place_id) setPlace({ placeId: c.place_id, lat: c.lat, lng: c.lng });
+        setCobertura('covered');
+        setEsRecurrente(true);
+        setStep(3);
+      } else {
+        setStep(1);
+      }
+    } catch {
+      setStep(1);
+    } finally {
+      setLookingUp(false);
+    }
+  };
+
   // Persists whatever the current step just collected as part of the lead,
   // in the background, before advancing — so leaving mid-flow still counts.
   const handleContinue = () => {
-    if (step === 0) saveLeadProgress({ telefono, email: email || undefined });
+    if (step === 0) {
+      saveLeadProgress({ telefono, email: email || undefined });
+      lookupAndAdvance();
+      return;
+    }
     if (step === 1) {
       saveLeadProgress({
         direccion,
@@ -251,6 +289,7 @@ export default function Agendar() {
       placeId: place?.placeId,
       lat: place?.lat,
       lng: place?.lng,
+      esRecurrente,
     };
 
     try {
@@ -288,13 +327,28 @@ export default function Agendar() {
   const requiresNombre = step === 2 && !nombre.trim();
   const requiresHorario = step === 3 && selectedHoraCount >= slotMax;
   const nextDisabled =
-    requiresTelefono || requiresDireccion || requiresNombre || requiresHorario || submitting;
+    requiresTelefono ||
+    requiresDireccion ||
+    requiresNombre ||
+    requiresHorario ||
+    submitting ||
+    lookingUp;
   const showNav = step < LAST_STEP;
   const canBack = step > 0;
   const canSkip = step === 4 || step === 5;
   const isLastStep = step === 5;
-  const onNext = isLastStep ? finalizarReserva : handleContinue;
+  // Returning customers skip Detalles/Pago entirely — picking a slot and
+  // confirming finalizes the booking right away (pago a la entrega).
+  const isQuickFinalizeStep = esRecurrente && step === 3;
+  const onNext = isLastStep || isQuickFinalizeStep ? finalizarReserva : handleContinue;
   const onSkip = isLastStep ? finalizarReserva : siguiente;
+  const nextLabel = lookingUp
+    ? 'Buscando…'
+    : submitting
+      ? 'Procesando…'
+      : isQuickFinalizeStep
+        ? 'Confirmar agenda'
+        : NEXT_LABELS[step];
 
   return (
     <section className={styles.section}>
@@ -434,6 +488,15 @@ export default function Agendar() {
             <>
               <h2 className={styles.stepHeading}>Elige día y horario</h2>
               <p className={styles.stepSubtext}>Para la recolección de tus prendas.</p>
+              {esRecurrente && (
+                <div className={styles.successBanner} style={{ marginBottom: 20 }}>
+                  <span className={styles.successIcon}>✓</span>
+                  <span className={styles.successText}>
+                    ¡Qué bueno tenerte de vuelta{nombre ? `, ${nombre}` : ''}! Recogemos en:{' '}
+                    {direccion}.
+                  </span>
+                </div>
+              )}
               <div className={styles.diasGrid}>
                 {DIAS.map((dia, i) => (
                   <button
@@ -576,7 +639,7 @@ export default function Agendar() {
                 disabled={nextDisabled}
                 onClick={onNext}
               >
-                {submitting ? 'Procesando…' : NEXT_LABELS[step]}
+                {nextLabel}
               </button>
             </div>
           </div>

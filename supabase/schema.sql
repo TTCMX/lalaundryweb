@@ -43,7 +43,10 @@ create table if not exists bookings (
   mercadopago_preference_id text,
   mercadopago_payment_id text,
 
-  email_confirmacion_enviado boolean not null default false
+  email_confirmacion_enviado boolean not null default false,
+  -- True when this booking was created via the quick "returning customer"
+  -- flow (phone number matched a prior real booking).
+  es_recurrente boolean not null default false
 );
 
 create index if not exists bookings_mercadopago_preference_id_idx
@@ -90,3 +93,6 @@ alter table bookings alter column pago_status set default 'incompleto';
 alter table bookings drop constraint if exists bookings_pago_status_check;
 alter table bookings add constraint bookings_pago_status_check
   check (pago_status in ('incompleto', 'pendiente', 'pagado', 'rechazado', 'pago_entrega'));
+
+-- Migration: run this once for the returning-customer quick booking flow.
+alter table bookings add column if not exists es_recurrente boolean not null default false;

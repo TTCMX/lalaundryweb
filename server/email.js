@@ -117,10 +117,11 @@ export async function sendBookingConfirmationEmail(booking) {
 
 export function formatOwnerNotificationHtml(booking) {
   return renderEmailShell({
-    eyebrow: 'Nueva recolección',
+    eyebrow: booking.es_recurrente ? 'Cliente recurrente' : 'Nueva recolección',
     heading: 'Nueva recolección agendada',
     intro: `ID de reserva: ${booking.id}`,
     rows: [
+      { label: 'Cliente', value: booking.es_recurrente ? 'Recurrente' : 'Nuevo' },
       { label: 'Nombre', value: booking.nombre || 'No proporcionado' },
       { label: 'Dirección', value: booking.direccion },
       { label: 'Código postal', value: booking.cp },
