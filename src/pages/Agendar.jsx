@@ -252,7 +252,7 @@ export default function Agendar() {
   // in the background, before advancing — so leaving mid-flow still counts.
   const handleContinue = () => {
     if (step === 0) {
-      saveLeadProgress({ telefono, email: email || undefined });
+      saveLeadProgress({ telefono });
       lookupAndAdvance();
       return;
     }
@@ -265,7 +265,7 @@ export default function Agendar() {
         lng: place?.lng,
       });
     }
-    if (step === 2) saveLeadProgress({ nombre });
+    if (step === 2) saveLeadProgress({ nombre, email: email || undefined });
     if (step === 3) {
       saveLeadProgress({ diaLabel: DIAS[diaSel].fullLabel, horaLabel: HORAS[horaSel].label });
     }
@@ -393,14 +393,6 @@ export default function Agendar() {
                 value={telefono}
                 onChange={(e) => setTelefono(e.target.value)}
                 placeholder="55 1234 5678"
-              />
-              <label className={styles.label}>Correo (opcional)</label>
-              <input
-                type="email"
-                className={styles.input}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
                 style={{ marginBottom: 0 }}
               />
             </>
@@ -479,6 +471,14 @@ export default function Agendar() {
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 placeholder="Ej. Juan Pérez"
+              />
+              <label className={styles.label}>Correo (opcional)</label>
+              <input
+                type="email"
+                className={styles.input}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@correo.com"
                 style={{ marginBottom: 0 }}
               />
             </>
