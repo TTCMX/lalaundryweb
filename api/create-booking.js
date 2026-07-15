@@ -79,12 +79,18 @@ export default async function handler(req, res) {
     }
     await sendOwnerBookingNotification(booking);
 
-    const opsResult = await notifyOpsApp(booking);
-    if (opsResult.ok) {
-      await supabase
-        .from('bookings')
-        .update({ ops_pedido_id: opsResult.pedidoId, ops_cliente_id: opsResult.clienteId })
-        .eq('id', booking.id);
+    // Never let a hiccup here (ops app down, missing columns, etc.) turn an
+    // already-confirmed booking into a failure response for the customer.
+    try {
+      const opsResult = await notifyOpsApp(booking);
+      if (opsResult.ok) {
+        await supabase
+          .from('bookings')
+          .update({ ops_pedido_id: opsResult.pedidoId, ops_cliente_id: opsResult.clienteId })
+          .eq('id', booking.id);
+      }
+    } catch (opsErr) {
+      console.error('[create-booking] ops-app relay failed (non-fatal):', opsErr);
     }
 
     res.status(200).json({ id: booking.id });

@@ -64,12 +64,16 @@ export default async function handler(req, res) {
       }
       await sendOwnerBookingNotification(booking);
 
-      const opsResult = await notifyOpsApp(booking);
-      if (opsResult.ok) {
-        await supabase
-          .from('bookings')
-          .update({ ops_pedido_id: opsResult.pedidoId, ops_cliente_id: opsResult.clienteId })
-          .eq('id', booking.id);
+      try {
+        const opsResult = await notifyOpsApp(booking);
+        if (opsResult.ok) {
+          await supabase
+            .from('bookings')
+            .update({ ops_pedido_id: opsResult.pedidoId, ops_cliente_id: opsResult.clienteId })
+            .eq('id', booking.id);
+        }
+      } catch (opsErr) {
+        console.error('[mercadopago-webhook] ops-app relay failed (non-fatal):', opsErr);
       }
     }
 
