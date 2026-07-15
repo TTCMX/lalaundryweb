@@ -20,6 +20,7 @@ function formatBookingHtml(booking) {
       <h2 style="color:#1c3a63;">¡Tu recolección está agendada!</h2>
       <p>Te avisaremos cuando el repartidor esté en camino.</p>
       <table style="border-collapse:collapse;margin-top:16px;">
+        <tr><td style="padding:6px 12px 6px 0;color:#666;">Nombre</td><td style="font-weight:600;">${booking.nombre || 'No proporcionado'}</td></tr>
         <tr><td style="padding:6px 12px 6px 0;color:#666;">Dirección</td><td style="font-weight:600;">${booking.direccion}</td></tr>
         <tr><td style="padding:6px 12px 6px 0;color:#666;">Teléfono</td><td style="font-weight:600;">${booking.telefono}</td></tr>
         <tr><td style="padding:6px 12px 6px 0;color:#666;">Horario</td><td style="font-weight:600;">${booking.dia_label}, ${booking.hora_label}</td></tr>
@@ -62,6 +63,7 @@ function formatOwnerNotificationHtml(booking) {
     <div style="font-family:sans-serif;color:#1a1a1a;">
       <h2 style="color:#1c3a63;">Nueva recolección agendada</h2>
       <table style="border-collapse:collapse;margin-top:16px;">
+        <tr><td style="padding:6px 12px 6px 0;color:#666;">Nombre</td><td style="font-weight:600;">${booking.nombre || 'No proporcionado'}</td></tr>
         <tr><td style="padding:6px 12px 6px 0;color:#666;">Dirección</td><td style="font-weight:600;">${booking.direccion}</td></tr>
         <tr><td style="padding:6px 12px 6px 0;color:#666;">Código postal</td><td style="font-weight:600;">${booking.cp}</td></tr>
         <tr><td style="padding:6px 12px 6px 0;color:#666;">Teléfono</td><td style="font-weight:600;">${booking.telefono}</td></tr>

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const { data: booking, error } = await supabase
       .from('bookings')
       .select(
-        'id, direccion, telefono, dia_label, hora_label, pago_metodo, pago_status, deposito_monto'
+        'id, nombre, direccion, telefono, dia_label, hora_label, pago_metodo, pago_status, deposito_monto'
       )
       .eq('id', id)
       .maybeSingle();

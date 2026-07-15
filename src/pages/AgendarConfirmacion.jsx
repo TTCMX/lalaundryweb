@@ -82,6 +82,10 @@ export default function AgendarConfirmacion() {
               </p>
               <div className={agendarStyles.resumen}>
                 <div className={agendarStyles.resumenRow}>
+                  <span className={agendarStyles.resumenLabel}>Nombre</span>
+                  <span className={agendarStyles.resumenValue}>{booking.nombre || 'Sin especificar'}</span>
+                </div>
+                <div className={agendarStyles.resumenRow}>
                   <span className={agendarStyles.resumenLabel}>Dirección</span>
                   <span className={agendarStyles.resumenValue}>{booking.direccion}</span>
                 </div>

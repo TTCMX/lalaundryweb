@@ -4,7 +4,8 @@ import PlaceholderImage from '../components/PlaceholderImage.jsx';
 import { loadGoogleMaps } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 
-const STEP_LABELS = ['Dirección', 'Teléfono', 'Horario', 'Detalles', 'Pago', 'Listo'];
+const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Pago', 'Listo'];
+const LAST_STEP = STEP_LABELS.length - 1;
 const DIA_OFFSETS = [
   { offset: 1, relative: 'Mañana' },
   { offset: 2, relative: 'Pasado mañana' },
@@ -16,7 +17,15 @@ const HORA_RANGES = [
   { start: 15, end: 17 },
   { start: 17, end: 19 },
 ];
-const NEXT_LABELS = ['Continuar', 'Continuar', 'Continuar', 'Continuar', 'Confirmar agenda', 'Listo'];
+const NEXT_LABELS = [
+  'Continuar',
+  'Continuar',
+  'Continuar',
+  'Continuar',
+  'Continuar',
+  'Confirmar agenda',
+  'Listo',
+];
 
 function cx(...classes) {
   return classes.filter(Boolean).join(' ');
@@ -53,12 +62,13 @@ const HORAS = HORA_RANGES.map((range) => ({ ...range, label: formatHoraRange(ran
 export default function Agendar() {
   const DIAS = useMemo(buildDiaOptions, []);
   const [step, setStep] = useState(0);
+  const [telefono, setTelefono] = useState('');
+  const [email, setEmail] = useState('');
   const [direccion, setDireccion] = useState('');
   const [cp, setCp] = useState('');
   const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered
   const [place, setPlace] = useState(null); // { lat, lng, placeId } once chosen from Maps suggestions
-  const [telefono, setTelefono] = useState('');
-  const [email, setEmail] = useState('');
+  const [nombre, setNombre] = useState('');
   const [diaSel, setDiaSel] = useState(0);
   const [horaSel, setHoraSel] = useState(0);
   const [detalles, setDetalles] = useState('');
@@ -68,6 +78,25 @@ export default function Agendar() {
 
   const direccionInputRef = useRef(null);
   const mapRef = useRef(null);
+  const bookingIdRef = useRef(null);
+
+  // Best-effort background save — the customer becomes a lead as soon as we
+  // have a phone number, and the same row gets filled in as they keep going,
+  // so an abandoned booking still leaves something to follow up on.
+  const saveLeadProgress = async (fields) => {
+    try {
+      const res = await fetch('/api/save-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: bookingIdRef.current, ...fields }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.id) bookingIdRef.current = data.id;
+    } catch {
+      // Non-fatal — worst case this step's progress isn't saved as a lead.
+    }
+  };
 
   const checkCoverageFor = async (candidateCp, extra = {}) => {
     if (!candidateCp?.trim()) return;
@@ -152,17 +181,40 @@ export default function Agendar() {
     new window.google.maps.Marker({ position: center, map });
   }, [place]);
 
-  const siguiente = () => setStep((s) => Math.min(s + 1, 5));
+  const siguiente = () => setStep((s) => Math.min(s + 1, LAST_STEP));
   const atras = () => setStep((s) => Math.max(s - 1, 0));
+
+  // Persists whatever the current step just collected as part of the lead,
+  // in the background, before advancing — so leaving mid-flow still counts.
+  const handleContinue = () => {
+    if (step === 0) saveLeadProgress({ telefono, email: email || undefined });
+    if (step === 1) {
+      saveLeadProgress({
+        direccion,
+        cp,
+        placeId: place?.placeId,
+        lat: place?.lat,
+        lng: place?.lng,
+      });
+    }
+    if (step === 2) saveLeadProgress({ nombre });
+    if (step === 3) {
+      saveLeadProgress({ diaLabel: DIAS[diaSel].fullLabel, horaLabel: HORAS[horaSel].label });
+    }
+    if (step === 4) saveLeadProgress({ detalles: detalles || undefined });
+    siguiente();
+  };
 
   const finalizarReserva = async () => {
     setSubmitError('');
     setSubmitting(true);
     const payload = {
-      direccion,
-      cp,
+      bookingId: bookingIdRef.current,
       telefono,
       email: email || undefined,
+      direccion,
+      cp,
+      nombre,
       diaLabel: DIAS[diaSel].fullLabel,
       horaLabel: HORAS[horaSel].label,
       detalles: detalles || undefined,
@@ -190,7 +242,7 @@ export default function Agendar() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('create-booking-failed');
-      setStep(5);
+      setStep(LAST_STEP);
     } catch {
       setSubmitError('No pudimos agendar tu recolección. Intenta de nuevo.');
     } finally {
@@ -198,14 +250,15 @@ export default function Agendar() {
     }
   };
 
-  const requiresDireccion = step === 0 && (!direccion || cobertura !== 'covered');
-  const requiresTelefono = step === 1 && !telefono;
-  const nextDisabled = requiresDireccion || requiresTelefono || submitting;
-  const showNav = step < 5;
+  const requiresTelefono = step === 0 && !telefono;
+  const requiresDireccion = step === 1 && (!direccion || cobertura !== 'covered');
+  const requiresNombre = step === 2 && !nombre.trim();
+  const nextDisabled = requiresTelefono || requiresDireccion || requiresNombre || submitting;
+  const showNav = step < LAST_STEP;
   const canBack = step > 0;
-  const canSkip = step === 3 || step === 4;
-  const isLastStep = step === 4;
-  const onNext = isLastStep ? finalizarReserva : siguiente;
+  const canSkip = step === 4 || step === 5;
+  const isLastStep = step === 5;
+  const onNext = isLastStep ? finalizarReserva : handleContinue;
   const onSkip = isLastStep ? finalizarReserva : siguiente;
 
   return (
@@ -239,6 +292,32 @@ export default function Agendar() {
 
         <div className={styles.card}>
           {step === 0 && (
+            <>
+              <h2 className={styles.stepHeading}>¿A qué número te contactamos?</h2>
+              <p className={styles.stepSubtext}>
+                Usamos este número para confirmar tu recolección y avisos de entrega.
+              </p>
+              <label className={styles.label}>Teléfono</label>
+              <input
+                type="tel"
+                className={styles.input}
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="55 1234 5678"
+              />
+              <label className={styles.label}>Correo (opcional)</label>
+              <input
+                type="email"
+                className={styles.input}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@correo.com"
+                style={{ marginBottom: 0 }}
+              />
+            </>
+          )}
+
+          {step === 1 && (
             <>
               <h2 className={styles.stepHeading}>¿Dónde recogemos?</h2>
               <p className={styles.stepSubtext}>
@@ -298,33 +377,25 @@ export default function Agendar() {
             </>
           )}
 
-          {step === 1 && (
+          {step === 2 && (
             <>
-              <h2 className={styles.stepHeading}>¿A qué número te contactamos?</h2>
+              <h2 className={styles.stepHeading}>¿Cómo te llamas?</h2>
               <p className={styles.stepSubtext}>
-                Usamos este número para confirmar tu recolección y avisos de entrega.
+                Para saber a quién buscamos cuando lleguemos a recoger tus prendas.
               </p>
-              <label className={styles.label}>Teléfono</label>
+              <label className={styles.label}>Nombre completo</label>
               <input
-                type="tel"
+                type="text"
                 className={styles.input}
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                placeholder="55 1234 5678"
-              />
-              <label className={styles.label}>Correo (opcional)</label>
-              <input
-                type="email"
-                className={styles.input}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Ej. Juan Pérez"
                 style={{ marginBottom: 0 }}
               />
             </>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <>
               <h2 className={styles.stepHeading}>Elige día y horario</h2>
               <p className={styles.stepSubtext}>Para la recolección de tus prendas.</p>
@@ -354,7 +425,7 @@ export default function Agendar() {
             </>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <>
               <h2 className={styles.stepHeading}>Agrega detalles</h2>
               <p className={styles.stepSubtextTight}>
@@ -371,7 +442,7 @@ export default function Agendar() {
             </>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <>
               <h2 className={styles.stepHeading}>Pago</h2>
               <p className={styles.stepSubtextTight}>
@@ -402,7 +473,7 @@ export default function Agendar() {
             </>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <div className={styles.listo}>
               <div className={styles.listoIcon}>✓</div>
               <h2 className={styles.listoTitle}>¡Listo! Tu recolección está agendada.</h2>
@@ -411,12 +482,16 @@ export default function Agendar() {
               </p>
               <div className={styles.resumen}>
                 <div className={styles.resumenRow}>
-                  <span className={styles.resumenLabel}>Dirección</span>
-                  <span className={styles.resumenValue}>{direccion || 'Sin especificar'}</span>
+                  <span className={styles.resumenLabel}>Nombre</span>
+                  <span className={styles.resumenValue}>{nombre || 'Sin especificar'}</span>
                 </div>
                 <div className={styles.resumenRow}>
                   <span className={styles.resumenLabel}>Teléfono</span>
                   <span className={styles.resumenValue}>{telefono || 'Sin especificar'}</span>
+                </div>
+                <div className={styles.resumenRow}>
+                  <span className={styles.resumenLabel}>Dirección</span>
+                  <span className={styles.resumenValue}>{direccion || 'Sin especificar'}</span>
                 </div>
                 <div className={styles.resumenRow}>
                   <span className={styles.resumenLabel}>Horario</span>

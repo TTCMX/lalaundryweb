@@ -9,8 +9,20 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { direccion, cp, telefono, email, diaLabel, horaLabel, detalles, placeId, lat, lng } =
-    req.body || {};
+  const {
+    bookingId,
+    nombre,
+    direccion,
+    cp,
+    telefono,
+    email,
+    diaLabel,
+    horaLabel,
+    detalles,
+    placeId,
+    lat,
+    lng,
+  } = req.body || {};
 
   if (!direccion || !cp || !telefono || !diaLabel || !horaLabel) {
     res.status(400).json({ error: 'Missing required booking fields' });
@@ -20,24 +32,28 @@ export default async function handler(req, res) {
   try {
     const supabase = getSupabaseClient();
 
-    const { data: booking, error } = await supabase
-      .from('bookings')
-      .insert({
-        direccion,
-        cp,
-        telefono,
-        email: email || null,
-        dia_label: diaLabel,
-        hora_label: horaLabel,
-        detalles: detalles || null,
-        pago_metodo: 'entrega',
-        pago_status: 'pago_entrega',
-        place_id: placeId || null,
-        lat: lat ?? null,
-        lng: lng ?? null,
-      })
-      .select()
-      .single();
+    const bookingData = {
+      nombre: nombre || null,
+      direccion,
+      cp,
+      telefono,
+      email: email || null,
+      dia_label: diaLabel,
+      hora_label: horaLabel,
+      detalles: detalles || null,
+      pago_metodo: 'entrega',
+      pago_status: 'pago_entrega',
+      place_id: placeId || null,
+      lat: lat ?? null,
+      lng: lng ?? null,
+    };
+
+    // If a lead was already created earlier in the flow, finalize that same
+    // row instead of writing a duplicate.
+    const query = bookingId
+      ? supabase.from('bookings').update(bookingData).eq('id', bookingId)
+      : supabase.from('bookings').insert(bookingData);
+    const { data: booking, error } = await query.select().single();
     if (error) throw error;
 
     const emailResult = await sendBookingConfirmationEmail(booking);
