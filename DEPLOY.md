@@ -26,7 +26,17 @@
 2. Mientras no verifiques un dominio propio, usa `onboarding@resend.dev` como remitente (límite: solo puedes mandarte correos a ti mismo, útil para probar). Para enviar a tus clientes reales, verifica tu dominio en Resend y cambia `RESEND_FROM_EMAIL` a algo como `La Laundry <reservas@tudominio.com>`.
 3. El correo de confirmación solo se envía si el cliente dejó su correo (el campo es opcional en el paso "Teléfono").
 
-## 4. Variables de entorno en Vercel
+## 4. Google Maps (autocompletado de direcciones)
+
+1. Ve a [console.cloud.google.com](https://console.cloud.google.com) y crea (o usa) un proyecto.
+2. Habilita dos APIs: **Maps JavaScript API** y **Places API** (APIs & Services → Library, busca cada una y dale "Enable").
+3. Este proyecto de Google Cloud necesita tener **facturación habilitada** (Billing) — Google da una cuota gratuita mensual que normalmente cubre un sitio chico/mediano, pero sin billing habilitado las APIs no funcionan.
+4. Crea una API key (APIs & Services → Credentials → Create Credentials → API Key).
+5. **Restringe la key** (muy importante, es una key que queda visible en el navegador): en "Application restrictions" elige "HTTP referrers" y agrega tu dominio, ej. `https://lalaundry.xyz/*` y `https://*.vercel.app/*` (y `http://localhost:*` si quieres probar en local con `vercel dev`).
+6. Esa key va en `VITE_GOOGLE_MAPS_API_KEY`.
+7. Si no configuras esta variable, el campo de dirección sigue funcionando como texto libre (sin autocompletado ni mapa) — no rompe el flujo, solo pierde la validación contra Maps.
+
+## 5. Variables de entorno en Vercel
 
 En el proyecto de Vercel → Settings → Environment Variables, agrega todas las variables de `.env.example`:
 
@@ -40,10 +50,11 @@ En el proyecto de Vercel → Settings → Environment Variables, agrega todas la
 | `SITE_URL` | la URL pública de tu deploy, ej. `https://la-laundry.vercel.app` (sin `/` al final) |
 | `DEPOSIT_AMOUNT_MXN` | `300` o el anticipo que definas |
 | `OWNER_NOTIFICATION_EMAIL` | tu correo — recibe un aviso cada vez que se confirma una recolección |
+| `VITE_GOOGLE_MAPS_API_KEY` | tu API key de Google Cloud, restringida a tu dominio |
 
 `SITE_URL` debe actualizarse cada vez que cambie tu dominio (por ejemplo, al pasar de la URL de preview a tu dominio final), porque MercadoPago usa ese valor para saber a dónde regresar al cliente y a dónde mandar la notificación de pago.
 
-## 5. Desplegar
+## 6. Desplegar
 
 ```bash
 npm i -g vercel   # si no lo tienes
@@ -53,7 +64,7 @@ vercel env pull .env.local   # opcional, para desarrollo local con `vercel dev`
 vercel --prod
 ```
 
-## 6. Probar en local
+## 7. Probar en local
 
 `vite dev` sirve el frontend pero no las funciones de `/api`. Para probar el flujo completo (incluyendo Supabase/MercadoPago/Resend) en tu máquina, usa:
 

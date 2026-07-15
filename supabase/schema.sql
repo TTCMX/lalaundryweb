@@ -19,6 +19,11 @@ create table if not exists bookings (
   cp text not null,
   telefono text not null,
   email text,
+  -- Set when the address came from a Google Places suggestion (see
+  -- src/lib/googleMaps.js); null if the customer typed free text instead.
+  place_id text,
+  lat double precision,
+  lng double precision,
 
   dia_label text not null,
   hora_label text not null,
@@ -42,3 +47,10 @@ create index if not exists bookings_mercadopago_preference_id_idx
 -- it keeps the tables safe in case the anon key is ever exposed elsewhere.
 alter table coverage_zips enable row level security;
 alter table bookings enable row level security;
+
+-- Migration: if you ran this file before the Google Places integration was
+-- added, run this block once to add the new columns to your existing table
+-- (safe to re-run — it no-ops if the columns already exist).
+alter table bookings add column if not exists place_id text;
+alter table bookings add column if not exists lat double precision;
+alter table bookings add column if not exists lng double precision;

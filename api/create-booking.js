@@ -9,7 +9,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { direccion, cp, telefono, email, diaLabel, horaLabel, detalles } = req.body || {};
+  const { direccion, cp, telefono, email, diaLabel, horaLabel, detalles, placeId, lat, lng } =
+    req.body || {};
 
   if (!direccion || !cp || !telefono || !diaLabel || !horaLabel) {
     res.status(400).json({ error: 'Missing required booking fields' });
@@ -31,6 +32,9 @@ export default async function handler(req, res) {
         detalles: detalles || null,
         pago_metodo: 'entrega',
         pago_status: 'pago_entrega',
+        place_id: placeId || null,
+        lat: lat ?? null,
+        lng: lng ?? null,
       })
       .select()
       .single();

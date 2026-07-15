@@ -11,7 +11,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { direccion, cp, telefono, email, diaLabel, horaLabel, detalles } = req.body || {};
+  const { direccion, cp, telefono, email, diaLabel, horaLabel, detalles, placeId, lat, lng } =
+    req.body || {};
 
   if (!direccion || !cp || !telefono || !diaLabel || !horaLabel) {
     res.status(400).json({ error: 'Missing required booking fields' });
@@ -34,6 +35,9 @@ export default async function handler(req, res) {
         pago_metodo: 'linea',
         pago_status: 'pendiente',
         deposito_monto: getDepositAmount(),
+        place_id: placeId || null,
+        lat: lat ?? null,
+        lng: lng ?? null,
       })
       .select()
       .single();

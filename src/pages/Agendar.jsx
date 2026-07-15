@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PlaceholderImage from '../components/PlaceholderImage.jsx';
+import { loadGoogleMaps } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 
 const STEP_LABELS = ['Dirección', 'Teléfono', 'Horario', 'Detalles', 'Pago', 'Listo'];
@@ -55,6 +56,7 @@ export default function Agendar() {
   const [direccion, setDireccion] = useState('');
   const [cp, setCp] = useState('');
   const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered
+  const [place, setPlace] = useState(null); // { lat, lng, placeId } once chosen from Maps suggestions
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
   const [diaSel, setDiaSel] = useState(0);
@@ -64,14 +66,17 @@ export default function Agendar() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const verificarCobertura = async () => {
-    if (!cp.trim()) return;
+  const direccionInputRef = useRef(null);
+  const mapRef = useRef(null);
+
+  const checkCoverageFor = async (candidateCp) => {
+    if (!candidateCp?.trim()) return;
     setCobertura('checking');
     try {
       const res = await fetch('/api/check-coverage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cp: cp.trim() }),
+        body: JSON.stringify({ cp: candidateCp.trim() }),
       });
       const data = await res.json();
       setCobertura(data.covered ? 'covered' : 'not-covered');
@@ -79,6 +84,59 @@ export default function Agendar() {
       setCobertura('not-covered');
     }
   };
+
+  const verificarCobertura = () => checkCoverageFor(cp);
+
+  // Attach Google Places Autocomplete to the address input so customers pick
+  // a real, verified address instead of typing free text.
+  useEffect(() => {
+    let autocomplete;
+    let listener;
+    loadGoogleMaps()
+      .then((google) => {
+        if (!direccionInputRef.current) return;
+        autocomplete = new google.maps.places.Autocomplete(direccionInputRef.current, {
+          componentRestrictions: { country: 'mx' },
+          fields: ['formatted_address', 'address_components', 'geometry', 'place_id'],
+        });
+        listener = autocomplete.addListener('place_changed', () => {
+          const p = autocomplete.getPlace();
+          if (!p.geometry?.location) return;
+          const postal = p.address_components?.find((c) => c.types.includes('postal_code'))?.long_name;
+          setDireccion(p.formatted_address || direccionInputRef.current.value);
+          setPlace({
+            lat: p.geometry.location.lat(),
+            lng: p.geometry.location.lng(),
+            placeId: p.place_id,
+          });
+          if (postal) {
+            setCp(postal);
+            checkCoverageFor(postal);
+          } else {
+            setCobertura('idle');
+          }
+        });
+      })
+      .catch((err) => console.warn('[agendar] Google Maps unavailable, falling back to free text:', err));
+
+    return () => {
+      if (listener) listener.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Render the confirmation map once a verified place has been chosen.
+  useEffect(() => {
+    if (!place || !mapRef.current || !window.google) return;
+    const center = { lat: place.lat, lng: place.lng };
+    const map = new window.google.maps.Map(mapRef.current, {
+      center,
+      zoom: 16,
+      disableDefaultUI: true,
+      zoomControl: true,
+    });
+    new window.google.maps.Marker({ position: center, map });
+  }, [place]);
 
   const siguiente = () => setStep((s) => Math.min(s + 1, 5));
   const atras = () => setStep((s) => Math.max(s - 1, 0));
@@ -94,6 +152,9 @@ export default function Agendar() {
       diaLabel: DIAS[diaSel].fullLabel,
       horaLabel: HORAS[horaSel].label,
       detalles: detalles || undefined,
+      placeId: place?.placeId,
+      lat: place?.lat,
+      lng: place?.lng,
     };
 
     try {
@@ -171,11 +232,15 @@ export default function Agendar() {
               </p>
               <label className={styles.label}>Dirección completa</label>
               <input
+                ref={direccionInputRef}
                 type="text"
                 className={styles.input}
                 value={direccion}
-                onChange={(e) => setDireccion(e.target.value)}
-                placeholder="Calle, número, colonia"
+                onChange={(e) => {
+                  setDireccion(e.target.value);
+                  setPlace(null);
+                }}
+                placeholder="Empieza a escribir tu calle y elige una sugerencia"
               />
               <label className={styles.label}>Código postal</label>
               <div className={styles.inlineRow}>
@@ -200,13 +265,20 @@ export default function Agendar() {
               <p className={styles.hint}>
                 La ubicación también se confirma sobre un mapa antes de agendar.
               </p>
-              <PlaceholderImage
-                label="mapa: confirmar ubicación exacta"
-                aspectRatio="16/6"
-                borderRadius={12}
-                fontSize={12}
-                style={{ marginBottom: 18 }}
-              />
+              {place ? (
+                <div
+                  ref={mapRef}
+                  style={{ aspectRatio: '16/6', borderRadius: 12, marginBottom: 18 }}
+                />
+              ) : (
+                <PlaceholderImage
+                  label="Elige una dirección sugerida arriba para ver el mapa"
+                  aspectRatio="16/6"
+                  borderRadius={12}
+                  fontSize={12}
+                  style={{ marginBottom: 18 }}
+                />
+              )}
               {cobertura === 'covered' && (
                 <div className={styles.successBanner}>
                   <span className={styles.successIcon}>✓</span>
