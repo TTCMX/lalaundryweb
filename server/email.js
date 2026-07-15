@@ -76,8 +76,11 @@ function formatOwnerNotificationHtml(booking) {
 }
 
 export async function sendOwnerBookingNotification(booking) {
-  const ownerEmail = process.env.OWNER_NOTIFICATION_EMAIL;
-  if (!ownerEmail) return { skipped: true, reason: 'no-owner-email' };
+  const ownerEmails = (process.env.OWNER_NOTIFICATION_EMAIL || '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter(Boolean);
+  if (!ownerEmails.length) return { skipped: true, reason: 'no-owner-email' };
 
   const resend = getResend();
   if (!resend) return { skipped: true, reason: 'no-api-key' };
@@ -87,7 +90,7 @@ export async function sendOwnerBookingNotification(booking) {
   try {
     await resend.emails.send({
       from,
-      to: ownerEmail,
+      to: ownerEmails,
       subject: `Nueva recolección: ${booking.direccion}`,
       html: formatOwnerNotificationHtml(booking),
     });
