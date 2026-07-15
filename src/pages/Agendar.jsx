@@ -6,16 +6,20 @@ import styles from './Agendar.module.css';
 
 const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Pago', 'Listo'];
 const LAST_STEP = STEP_LABELS.length - 1;
-const DIA_OFFSETS = [
-  { offset: 1, relative: 'Mañana' },
-  { offset: 2, relative: 'Pasado mañana' },
-  { offset: 3, relative: 'En 3 días' },
+const DIAS_HORIZON = 6;
+const SATURDAY = 6;
+const TUESDAY = 2;
+const FRIDAY = 5;
+// Domingo/Lunes/Miércoles/Jueves get an evening slot too; Martes/Viernes
+// don't; Sábado has no pickups at all (skipped when building the day list).
+const HORA_RANGES_FULL = [
+  { start: 10, end: 13 },
+  { start: 13, end: 16 },
+  { start: 20, end: 22 },
 ];
-const HORA_RANGES = [
-  { start: 9, end: 11 },
-  { start: 11, end: 13 },
-  { start: 15, end: 17 },
-  { start: 17, end: 19 },
+const HORA_RANGES_SHORT = [
+  { start: 10, end: 13 },
+  { start: 13, end: 16 },
 ];
 const NEXT_LABELS = [
   'Continuar',
@@ -42,22 +46,30 @@ function formatHoraRange({ start, end }) {
 }
 
 function buildDiaOptions() {
-  const today = new Date();
-  return DIA_OFFSETS.map(({ offset, relative }) => {
-    const date = new Date(today);
-    date.setDate(date.getDate() + offset);
-    const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(date);
-    const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(date);
-    const day = date.getDate();
-    return {
-      relative,
-      short: `${day} ${month.slice(0, 3)}`,
-      fullLabel: `${weekday} ${day} de ${month}`,
-    };
-  });
+  const days = [];
+  const cursor = new Date();
+  cursor.setDate(cursor.getDate() + 1); // earliest pickup is tomorrow
+  while (days.length < DIAS_HORIZON) {
+    if (cursor.getDay() !== SATURDAY) {
+      const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(cursor);
+      const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(cursor);
+      const day = cursor.getDate();
+      days.push({
+        weekdayIndex: cursor.getDay(),
+        weekdayLabel: weekday.charAt(0).toUpperCase() + weekday.slice(1),
+        short: `${day} ${month.slice(0, 3)}`,
+        fullLabel: `${weekday} ${day} de ${month}`,
+      });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return days;
 }
 
-const HORAS = HORA_RANGES.map((range) => ({ ...range, label: formatHoraRange(range) }));
+function horasForWeekday(weekdayIndex) {
+  const ranges = weekdayIndex === TUESDAY || weekdayIndex === FRIDAY ? HORA_RANGES_SHORT : HORA_RANGES_FULL;
+  return ranges.map((range) => ({ ...range, label: formatHoraRange(range) }));
+}
 
 export default function Agendar() {
   const DIAS = useMemo(buildDiaOptions, []);
@@ -71,6 +83,11 @@ export default function Agendar() {
   const [nombre, setNombre] = useState('');
   const [diaSel, setDiaSel] = useState(0);
   const [horaSel, setHoraSel] = useState(0);
+  const HORAS = useMemo(() => horasForWeekday(DIAS[diaSel]?.weekdayIndex), [DIAS, diaSel]);
+  const selectDia = (i) => {
+    setDiaSel(i);
+    setHoraSel(0);
+  };
   const [detalles, setDetalles] = useState('');
   const [pago, setPago] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -500,16 +517,16 @@ export default function Agendar() {
               <div className={styles.diasGrid}>
                 {DIAS.map((dia, i) => (
                   <button
-                    key={dia.relative}
+                    key={dia.fullLabel}
                     className={cx(styles.choiceButton, diaSel === i && styles.choiceButtonSelected)}
-                    onClick={() => setDiaSel(i)}
+                    onClick={() => selectDia(i)}
                   >
-                    <div>{dia.relative}</div>
+                    <div>{dia.weekdayLabel}</div>
                     <div className={styles.choiceButtonSubtext}>{dia.short}</div>
                   </button>
                 ))}
               </div>
-              <div className={styles.horasGrid}>
+              <div className={styles.horasGrid} style={{ gridTemplateColumns: `repeat(${HORAS.length}, 1fr)` }}>
                 {HORAS.map((hora, i) => {
                   const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
                   const isFull = count >= slotMax;
