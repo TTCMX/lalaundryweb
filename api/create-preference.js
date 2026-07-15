@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { createPreference, getDepositAmount } from '../server/mercadopago.js';
+import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
 
 // Used for the "pagar en línea" path — creates the booking as pendiente,
 // then a MercadoPago Checkout Pro preference for the deposit. The client
@@ -32,6 +33,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (await isSlotFull(diaLabel, horaLabel, bookingId)) {
+      res.status(409).json({
+        error: 'slot-full',
+        message: `Ese horario ya alcanzó el límite de ${getMaxBookingsPerSlot()} recolecciones.`,
+      });
+      return;
+    }
+
     const supabase = getSupabaseClient();
 
     const bookingData = {

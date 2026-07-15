@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
+import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
 
 // Used for the "pagar a la entrega" path — no online charge, so we can
 // confirm the booking immediately instead of waiting on a payment webhook.
@@ -30,6 +31,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (await isSlotFull(diaLabel, horaLabel, bookingId)) {
+      res.status(409).json({
+        error: 'slot-full',
+        message: `Ese horario ya alcanzó el límite de ${getMaxBookingsPerSlot()} recolecciones.`,
+      });
+      return;
+    }
+
     const supabase = getSupabaseClient();
 
     const bookingData = {

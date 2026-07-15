@@ -75,6 +75,8 @@ export default function Agendar() {
   const [pago, setPago] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [slotCounts, setSlotCounts] = useState({});
+  const [slotMax, setSlotMax] = useState(5);
 
   const direccionInputRef = useRef(null);
   const mapRef = useRef(null);
@@ -187,6 +189,28 @@ export default function Agendar() {
     new window.google.maps.Marker({ position: center, map });
   }, [step, place]);
 
+  // Check which day/hora combos already hit the cap so full slots can be
+  // grayed out instead of only rejecting at the very last step.
+  useEffect(() => {
+    if (step !== 3) return;
+    let cancelled = false;
+    fetch('/api/slot-availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ diaLabels: DIAS.map((d) => d.fullLabel) }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        setSlotCounts(data.counts || {});
+        if (data.max) setSlotMax(data.max);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [step, DIAS]);
+
   const siguiente = () => setStep((s) => Math.min(s + 1, LAST_STEP));
   const atras = () => setStep((s) => Math.max(s - 1, 0));
 
@@ -230,24 +254,26 @@ export default function Agendar() {
     };
 
     try {
-      if (pago === 'linea') {
-        const res = await fetch('/api/create-preference', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error('create-preference-failed');
-        const data = await res.json();
-        window.location.href = data.init_point;
-        return;
-      }
-
-      const res = await fetch('/api/create-booking', {
+      const url = pago === 'linea' ? '/api/create-preference' : '/api/create-booking';
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('create-booking-failed');
+
+      if (res.status === 409) {
+        const data = await res.json().catch(() => null);
+        setSubmitError(data?.message || 'Ese horario ya está lleno. Elige otro.');
+        setStep(3);
+        return;
+      }
+      if (!res.ok) throw new Error('finalize-booking-failed');
+
+      const data = await res.json();
+      if (pago === 'linea') {
+        window.location.href = data.init_point;
+        return;
+      }
       setStep(LAST_STEP);
     } catch {
       setSubmitError('No pudimos agendar tu recolección. Intenta de nuevo.');
@@ -256,10 +282,13 @@ export default function Agendar() {
     }
   };
 
+  const selectedHoraCount = slotCounts[DIAS[diaSel]?.fullLabel]?.[HORAS[horaSel]?.label] || 0;
   const requiresTelefono = step === 0 && !telefono;
   const requiresDireccion = step === 1 && (!direccion || cobertura !== 'covered');
   const requiresNombre = step === 2 && !nombre.trim();
-  const nextDisabled = requiresTelefono || requiresDireccion || requiresNombre || submitting;
+  const requiresHorario = step === 3 && selectedHoraCount >= slotMax;
+  const nextDisabled =
+    requiresTelefono || requiresDireccion || requiresNombre || requiresHorario || submitting;
   const showNav = step < LAST_STEP;
   const canBack = step > 0;
   const canSkip = step === 4 || step === 5;
@@ -418,16 +447,26 @@ export default function Agendar() {
                 ))}
               </div>
               <div className={styles.horasGrid}>
-                {HORAS.map((hora, i) => (
-                  <button
-                    key={hora.label}
-                    className={cx(styles.choiceButton, horaSel === i && styles.choiceButtonSelected)}
-                    onClick={() => setHoraSel(i)}
-                  >
-                    {hora.label}
-                  </button>
-                ))}
+                {HORAS.map((hora, i) => {
+                  const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
+                  const isFull = count >= slotMax;
+                  return (
+                    <button
+                      key={hora.label}
+                      className={cx(
+                        styles.choiceButton,
+                        horaSel === i && styles.choiceButtonSelected,
+                        isFull && styles.choiceButtonDisabled
+                      )}
+                      onClick={() => setHoraSel(i)}
+                      disabled={isFull}
+                    >
+                      {isFull ? 'Lleno' : hora.label}
+                    </button>
+                  );
+                })}
               </div>
+              {submitError && <p className={styles.errorMessage}>{submitError}</p>}
             </>
           )}
 

@@ -185,6 +185,12 @@
   margin-top: 2px;
 }
 
+.choiceButtonDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--color-bg);
+}
+
 .textarea {
   width: 100%;
   box-sizing: border-box;
