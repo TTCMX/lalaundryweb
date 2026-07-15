@@ -385,3 +385,35 @@
   opacity: 0.7;
   cursor: not-allowed;
 }
+
+@media (max-width: 640px) {
+  .section {
+    padding: 28px 20px 40px;
+  }
+  .title {
+    font-size: 26px;
+    margin-bottom: 24px;
+  }
+  .card {
+    padding: 24px 20px;
+    min-height: 0;
+  }
+  .stepperLabel {
+    font-size: 10px;
+  }
+  .stepperCircle {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+  .stepperLine {
+    top: 13px;
+  }
+  .navRow {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .navRowActions {
+    flex-wrap: wrap;
+  }
+}

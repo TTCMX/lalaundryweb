@@ -146,3 +146,47 @@
   font-size: 15px;
   white-space: nowrap;
 }
+
+@media (max-width: 860px) {
+  .proceso {
+    padding: 20px 32px 10px;
+  }
+  .procesoGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .categorias {
+    padding: 32px 32px 56px;
+  }
+  .ctaSection {
+    padding: 0 32px 56px;
+  }
+}
+
+@media (max-width: 640px) {
+  .proceso {
+    padding: 16px 20px 8px;
+  }
+  .categorias {
+    padding: 28px 20px 48px;
+  }
+  .itemsGrid {
+    grid-template-columns: 1fr;
+  }
+  .categoriaHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .ctaSection {
+    padding: 0 20px 48px;
+  }
+  .ctaBanner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 26px 24px;
+  }
+  .ctaButton {
+    width: 100%;
+    text-align: center;
+  }
+}

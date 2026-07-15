@@ -224,3 +224,74 @@
   font-size: 14px;
   color: var(--color-text-light-2);
 }
+
+@media (max-width: 860px) {
+  .hero {
+    padding: 64px 32px 48px;
+  }
+  .heroTitle {
+    font-size: 42px;
+  }
+  .heroText {
+    font-size: 17px;
+  }
+  .steps,
+  .academyTeaser,
+  .ctaSection {
+    padding: 48px 32px;
+  }
+  .stepsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px 20px;
+  }
+  .academyGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .ctaBanner {
+    grid-template-columns: 1fr;
+    padding: 36px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hero {
+    padding: 48px 20px 40px;
+  }
+  .heroDecoration {
+    width: 160px;
+    height: 160px;
+    right: -40px;
+    top: -40px;
+  }
+  .heroTitle {
+    font-size: 32px;
+  }
+  .heroActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btnPrimary,
+  .btnSecondary {
+    text-align: center;
+  }
+  .steps,
+  .academyTeaser,
+  .ctaSection {
+    padding: 40px 20px;
+  }
+  .stepsTitle {
+    font-size: 26px;
+    margin-bottom: 32px;
+  }
+  .stepsGrid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .ctaBanner {
+    padding: 28px 24px;
+  }
+  .ctaTitle {
+    font-size: 24px;
+  }
+}

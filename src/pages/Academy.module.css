@@ -96,3 +96,27 @@
   font-size: 14px;
   margin-top: 28px;
 }
+
+@media (max-width: 860px) {
+  .temas {
+    padding: 28px 32px 20px;
+  }
+  .temasGrid {
+    grid-template-columns: 1fr;
+  }
+  .casos {
+    padding: 20px 32px 56px;
+  }
+}
+
+@media (max-width: 640px) {
+  .temas {
+    padding: 24px 20px 16px;
+  }
+  .casos {
+    padding: 16px 20px 48px;
+  }
+  .casosGrid {
+    grid-template-columns: 1fr;
+  }
+}
