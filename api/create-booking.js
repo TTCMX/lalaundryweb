@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
-import { sendBookingConfirmationEmail } from '../server/email.js';
+import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
 
 // Used for the "pagar a la entrega" path — no online charge, so we can
 // confirm the booking immediately instead of waiting on a payment webhook.
@@ -43,6 +43,7 @@ export default async function handler(req, res) {
         .update({ email_confirmacion_enviado: true })
         .eq('id', booking.id);
     }
+    await sendOwnerBookingNotification(booking);
 
     res.status(200).json({ id: booking.id });
   } catch (err) {

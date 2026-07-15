@@ -1,6 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { getPayment } from '../server/mercadopago.js';
-import { sendBookingConfirmationEmail } from '../server/email.js';
+import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
 
 const STATUS_MAP = {
   approved: 'pagado',
@@ -61,6 +61,7 @@ export default async function handler(req, res) {
           .update({ email_confirmacion_enviado: true })
           .eq('id', booking.id);
       }
+      await sendOwnerBookingNotification(booking);
     }
 
     res.status(200).json({ ok: true });

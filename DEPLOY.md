@@ -39,6 +39,7 @@ En el proyecto de Vercel → Settings → Environment Variables, agrega todas la
 | `RESEND_FROM_EMAIL` | remitente verificado (o `onboarding@resend.dev` para pruebas) |
 | `SITE_URL` | la URL pública de tu deploy, ej. `https://la-laundry.vercel.app` (sin `/` al final) |
 | `DEPOSIT_AMOUNT_MXN` | `300` o el anticipo que definas |
+| `OWNER_NOTIFICATION_EMAIL` | tu correo — recibe un aviso cada vez que se confirma una recolección |
 
 `SITE_URL` debe actualizarse cada vez que cambie tu dominio (por ejemplo, al pasar de la URL de preview a tu dominio final), porque MercadoPago usa ese valor para saber a dónde regresar al cliente y a dónde mandar la notificación de pago.
 
