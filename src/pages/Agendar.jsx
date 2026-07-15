@@ -126,8 +126,12 @@ export default function Agendar() {
   };
 
   // Attach Google Places Autocomplete to the address input so customers pick
-  // a real, verified address instead of typing free text.
+  // a real, verified address instead of typing free text. The input only
+  // exists in the DOM while step === 1 (conditionally rendered), and gets a
+  // fresh node each time the user re-enters this step, so this has to re-run
+  // on every step change rather than once on mount.
   useEffect(() => {
+    if (step !== 1 || !direccionInputRef.current) return;
     let autocomplete;
     let listener;
     loadGoogleMaps()
@@ -166,11 +170,13 @@ export default function Agendar() {
       if (listener) listener.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [step]);
 
-  // Render the confirmation map once a verified place has been chosen.
+  // Render the confirmation map once a verified place has been chosen. Also
+  // re-runs on step change so the map reappears if the customer goes back to
+  // this step after already picking an address (fresh <div>, same reason).
   useEffect(() => {
-    if (!place || !mapRef.current || !window.google) return;
+    if (step !== 1 || !place || !mapRef.current || !window.google) return;
     const center = { lat: place.lat, lng: place.lng };
     const map = new window.google.maps.Map(mapRef.current, {
       center,
@@ -179,7 +185,7 @@ export default function Agendar() {
       zoomControl: true,
     });
     new window.google.maps.Marker({ position: center, map });
-  }, [place]);
+  }, [step, place]);
 
   const siguiente = () => setStep((s) => Math.min(s + 1, LAST_STEP));
   const atras = () => setStep((s) => Math.max(s - 1, 0));
