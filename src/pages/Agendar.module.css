@@ -238,7 +238,7 @@
 
 .pagoOptionSelected {
   border-color: var(--color-orange);
-  background: oklch(0.97 0.03 45);
+  background: #fdeeeb;
 }
 
 .pagoOptionTitle {

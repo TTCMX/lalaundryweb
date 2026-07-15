@@ -1,41 +1,48 @@
 :root {
-  --color-navy: oklch(0.28 0.07 250);
-  --color-navy-dark: oklch(0.22 0.06 250);
-  --color-navy-line: oklch(0.4 0.05 250);
-  --color-orange: oklch(0.66 0.16 45);
-  --color-orange-hover: oklch(0.58 0.16 42);
-  --color-orange-on: oklch(0.18 0.03 40);
+  /* Brand: dark surfaces (header/footer/hero/CTA banners) + doubles as the
+     dark heading/ink color on light backgrounds, same role the old navy played. */
+  --color-navy: #506d6b;
+  --color-navy-dark: #3d5452;
+  --color-navy-line: #6b8886;
 
-  --color-bg: oklch(0.97 0.015 75);
-  --color-card: oklch(0.99 0.005 80);
-  --color-border: oklch(0.9 0.015 75);
-  --color-border-strong: oklch(0.85 0.02 75);
+  /* Brand accent (logo color) */
+  --color-orange: #f37562;
+  --color-orange-hover: #dd6046;
+  /* Coral doesn't have enough contrast with either white or the dark teal at
+     normal weight, so buttons/pills on it use a near-black ink instead. */
+  --color-orange-on: #1c2625;
 
-  --color-text: oklch(0.26 0.02 90);
-  --color-text-strong: oklch(0.28 0.02 90);
-  --color-text-muted: oklch(0.5 0.02 90);
-  --color-text-muted-2: oklch(0.55 0.02 90);
-  --color-text-light: oklch(0.85 0.02 75);
-  --color-text-light-2: oklch(0.82 0.02 75);
-  --color-text-lighter: oklch(0.95 0.01 75);
+  --color-bg: #dcf5f6;
+  --color-card: #ffffff;
+  --color-border: #cdeaec;
+  --color-border-strong: #a9d3d5;
 
-  --color-white: oklch(0.98 0.01 75);
-  --color-white-2: oklch(0.97 0.02 75);
-  --color-nav-inactive: oklch(0.85 0.01 75);
+  --color-text: #506d6b;
+  --color-text-strong: #43605e;
+  --color-text-muted: #7c9997;
+  --color-text-muted-2: #86a19f;
+  --color-text-light: #cdeaec;
+  --color-text-light-2: #c3e5e7;
+  --color-text-lighter: #eafbfc;
 
-  --color-badge-bg: oklch(0.9 0.03 45);
-  --color-badge-text: oklch(0.4 0.1 45);
+  --color-white: #ffffff;
+  --color-white-2: #f2fbfb;
+  --color-nav-inactive: #bfe0e2;
 
+  --color-badge-bg: #fbe0da;
+  --color-badge-text: #a84a37;
+
+  /* Success/error stay semantic (green/red), independent of the brand palette. */
   --color-success-bg: oklch(0.94 0.05 150);
   --color-success-border: oklch(0.7 0.1 150);
   --color-success-icon-bg: oklch(0.55 0.13 150);
   --color-success-text: oklch(0.3 0.06 150);
 
-  --color-footer-copy: oklch(0.75 0.02 75);
-  --color-footer-link: oklch(0.8 0.02 75);
+  --color-footer-copy: #a8cbc9;
+  --color-footer-link: #b9dcda;
 
-  --color-stripe-a: oklch(0.9 0.02 75);
-  --color-stripe-b: oklch(0.94 0.015 75);
+  --color-stripe-a: #cdeaec;
+  --color-stripe-b: #e3f6f7;
 
   --font-display: 'Abril Fatface', serif;
   --font-body: 'Work Sans', sans-serif;
