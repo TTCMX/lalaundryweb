@@ -1,20 +1,21 @@
 import PageHero from '../components/PageHero.jsx';
 import PlaceholderImage from '../components/PlaceholderImage.jsx';
+import { CheckIcon, XIcon } from '../components/Icon.jsx';
 import styles from './Academy.module.css';
 
 const TEMAS = [
   {
-    icono: '✓',
+    icon: <CheckIcon />,
     titulo: 'Se resuelve en casa',
     desc: 'Manchas frescas, olores leves y arrugas que puedes tratar tú mismo antes de que se fijen.',
   },
   {
-    icono: '!',
+    icon: '!',
     titulo: 'Mejor déjanoslo a nosotros',
     desc: 'Telas delicadas, manchas viejas o prendas de tintorería que necesitan proceso profesional.',
   },
   {
-    icono: '×',
+    icon: <XIcon />,
     titulo: 'Ya no tiene remedio',
     desc: 'Casos donde el daño es permanente: quemaduras, decoloración o desgaste irreversible.',
   },
@@ -41,7 +42,7 @@ export default function Academy() {
         <div className={styles.temasGrid}>
           {TEMAS.map((cat) => (
             <div className={styles.temaCard} key={cat.titulo}>
-              <div className={styles.temaIcon}>{cat.icono}</div>
+              <div className={styles.temaIcon}>{cat.icon}</div>
               <h3 className={styles.temaTitulo}>{cat.titulo}</h3>
               <p className={styles.temaDesc}>{cat.desc}</p>
             </div>

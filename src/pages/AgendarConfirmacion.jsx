@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { CheckIcon, XIcon } from '../components/Icon.jsx';
 import styles from './AgendarConfirmacion.module.css';
 import agendarStyles from './Agendar.module.css';
 
@@ -68,7 +69,7 @@ export default function AgendarConfirmacion() {
           ) : (
             <div className={agendarStyles.listo}>
               <div className={agendarStyles.listoIcon}>
-                {booking.pago_status === 'rechazado' ? '×' : '✓'}
+                {booking.pago_status === 'rechazado' ? <XIcon size={28} /> : <CheckIcon size={28} />}
               </div>
               <h2 className={agendarStyles.listoTitle}>
                 {booking.pago_status === 'rechazado'

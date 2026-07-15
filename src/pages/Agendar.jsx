@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PlaceholderImage from '../components/PlaceholderImage.jsx';
+import { CheckIcon, XIcon } from '../components/Icon.jsx';
 import { loadGoogleMaps } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 
@@ -10,6 +11,7 @@ const DIAS_HORIZON = 6;
 const SATURDAY = 6;
 const TUESDAY = 2;
 const FRIDAY = 5;
+const MIN_LEAD_HOURS = 2;
 // Domingo/Lunes/Miércoles/Jueves get an evening slot too; Martes/Viernes
 // don't; Sábado has no pickups at all (skipped when building the day list).
 const HORA_RANGES_FULL = [
@@ -45,30 +47,45 @@ function formatHoraRange({ start, end }) {
   return `${formatHour12(start)}-${formatHour12(end)}`;
 }
 
+// Slots less than MIN_LEAD_HOURS away aren't offered — for any day other
+// than today every slot is already well past that, so this only ever
+// filters today's remaining options.
+function horasFor(date, weekdayIndex) {
+  const ranges = weekdayIndex === TUESDAY || weekdayIndex === FRIDAY ? HORA_RANGES_SHORT : HORA_RANGES_FULL;
+  const cutoff = new Date(Date.now() + MIN_LEAD_HOURS * 60 * 60 * 1000);
+  return ranges
+    .filter((range) => {
+      const slotStart = new Date(date);
+      slotStart.setHours(range.start, 0, 0, 0);
+      return slotStart >= cutoff;
+    })
+    .map((range) => ({ ...range, label: formatHoraRange(range) }));
+}
+
 function buildDiaOptions() {
   const days = [];
   const cursor = new Date();
-  cursor.setDate(cursor.getDate() + 1); // earliest pickup is tomorrow
+  cursor.setHours(0, 0, 0, 0);
   while (days.length < DIAS_HORIZON) {
-    if (cursor.getDay() !== SATURDAY) {
-      const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(cursor);
-      const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(cursor);
-      const day = cursor.getDate();
-      days.push({
-        weekdayIndex: cursor.getDay(),
-        weekdayLabel: weekday.charAt(0).toUpperCase() + weekday.slice(1),
-        short: `${day} ${month.slice(0, 3)}`,
-        fullLabel: `${weekday} ${day} de ${month}`,
-      });
+    const weekdayIndex = cursor.getDay();
+    if (weekdayIndex !== SATURDAY) {
+      const horas = horasFor(cursor, weekdayIndex);
+      if (horas.length) {
+        const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(cursor);
+        const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(cursor);
+        const day = cursor.getDate();
+        days.push({
+          weekdayIndex,
+          weekdayLabel: weekday.charAt(0).toUpperCase() + weekday.slice(1),
+          short: `${day} ${month.slice(0, 3)}`,
+          fullLabel: `${weekday} ${day} de ${month}`,
+          horas,
+        });
+      }
     }
     cursor.setDate(cursor.getDate() + 1);
   }
   return days;
-}
-
-function horasForWeekday(weekdayIndex) {
-  const ranges = weekdayIndex === TUESDAY || weekdayIndex === FRIDAY ? HORA_RANGES_SHORT : HORA_RANGES_FULL;
-  return ranges.map((range) => ({ ...range, label: formatHoraRange(range) }));
 }
 
 export default function Agendar() {
@@ -83,7 +100,7 @@ export default function Agendar() {
   const [nombre, setNombre] = useState('');
   const [diaSel, setDiaSel] = useState(0);
   const [horaSel, setHoraSel] = useState(0);
-  const HORAS = useMemo(() => horasForWeekday(DIAS[diaSel]?.weekdayIndex), [DIAS, diaSel]);
+  const HORAS = DIAS[diaSel]?.horas || [];
   const selectDia = (i) => {
     setDiaSel(i);
     setHoraSel(0);
@@ -384,7 +401,7 @@ export default function Agendar() {
                   borderColor: i <= step ? 'var(--color-orange)' : 'var(--color-border-strong)',
                 }}
               >
-                {i < step ? '✓' : i + 1}
+                {i < step ? <CheckIcon size={12} /> : i + 1}
               </div>
               <span
                 className={styles.stepperLabel}
@@ -457,7 +474,9 @@ export default function Agendar() {
               )}
               {cobertura === 'covered' && (
                 <div className={styles.successBanner}>
-                  <span className={styles.successIcon}>✓</span>
+                  <span className={styles.successIcon}>
+                    <CheckIcon />
+                  </span>
                   <span className={styles.successText}>
                     ¡Buenas noticias! Tenemos cobertura en tu zona.
                   </span>
@@ -465,7 +484,9 @@ export default function Agendar() {
               )}
               {cobertura === 'not-covered' && (
                 <div className={cx(styles.successBanner, styles.errorBanner)}>
-                  <span className={cx(styles.successIcon, styles.errorIcon)}>×</span>
+                  <span className={cx(styles.successIcon, styles.errorIcon)}>
+                    <XIcon />
+                  </span>
                   <span className={cx(styles.successText, styles.errorText)}>
                     Todavía no tenemos cobertura en ese código postal. Guardamos tu ubicación para
                     avisarte cuando lleguemos a tu zona.
@@ -507,7 +528,9 @@ export default function Agendar() {
               <p className={styles.stepSubtext}>Para la recolección de tus prendas.</p>
               {esRecurrente && (
                 <div className={styles.successBanner} style={{ marginBottom: 20 }}>
-                  <span className={styles.successIcon}>✓</span>
+                  <span className={styles.successIcon}>
+                    <CheckIcon />
+                  </span>
                   <span className={styles.successText}>
                     ¡Qué bueno tenerte de vuelta{nombre ? `, ${nombre}` : ''}! Recogemos en:{' '}
                     {direccion}.
@@ -600,7 +623,9 @@ export default function Agendar() {
 
           {step === 6 && (
             <div className={styles.listo}>
-              <div className={styles.listoIcon}>✓</div>
+              <div className={styles.listoIcon}>
+                <CheckIcon size={28} />
+              </div>
               <h2 className={styles.listoTitle}>¡Listo! Tu recolección está agendada.</h2>
               <p className={styles.listoText}>
                 Te avisaremos por SMS al número registrado cuando el repartidor esté en camino.
