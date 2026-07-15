@@ -34,6 +34,9 @@ create table if not exists bookings (
   dia_label text,
   hora_label text,
   detalles text,
+  -- Actual pickup date (dia_label is just the Spanish display string) — also
+  -- what gets sent as "fecha" to the internal ops app's /api/agendar.
+  fecha_recoleccion date,
 
   pago_metodo text check (pago_metodo in ('linea', 'entrega')),
   pago_status text not null default 'incompleto'
@@ -46,7 +49,13 @@ create table if not exists bookings (
   email_confirmacion_enviado boolean not null default false,
   -- True when this booking was created via the quick "returning customer"
   -- flow (phone number matched a prior real booking).
-  es_recurrente boolean not null default false
+  es_recurrente boolean not null default false,
+
+  -- Set once the booking has been successfully relayed to the internal ops
+  -- app (see server/opsApp.js). Null means it hasn't been sent yet or the
+  -- call failed — the booking itself is still valid either way.
+  ops_pedido_id text,
+  ops_cliente_id text
 );
 
 create index if not exists bookings_mercadopago_preference_id_idx
@@ -96,3 +105,8 @@ alter table bookings add constraint bookings_pago_status_check
 
 -- Migration: run this once for the returning-customer quick booking flow.
 alter table bookings add column if not exists es_recurrente boolean not null default false;
+
+-- Migration: run this once for the internal ops app integration.
+alter table bookings add column if not exists fecha_recoleccion date;
+alter table bookings add column if not exists ops_pedido_id text;
+alter table bookings add column if not exists ops_cliente_id text;

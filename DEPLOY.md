@@ -51,6 +51,8 @@ En el proyecto de Vercel → Settings → Environment Variables, agrega todas la
 | `DEPOSIT_AMOUNT_MXN` | `300` o el anticipo que definas |
 | `OWNER_NOTIFICATION_EMAIL` | tu correo — recibe un aviso cada vez que se confirma una recolección |
 | `VITE_GOOGLE_MAPS_API_KEY` | tu API key de Google Cloud, restringida a tu dominio |
+| `MAX_BOOKINGS_PER_SLOT` | `5` o el límite que definas por bloque de 2 horas |
+| `OPS_AGENDAR_URL` | opcional — endpoint de la app interna de operación (por defecto `https://app.lalaundry.xyz/api/agendar`) |
 
 `SITE_URL` debe actualizarse cada vez que cambie tu dominio (por ejemplo, al pasar de la URL de preview a tu dominio final), porque MercadoPago usa ese valor para saber a dónde regresar al cliente y a dónde mandar la notificación de pago.
 

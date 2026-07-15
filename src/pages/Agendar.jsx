@@ -47,6 +47,15 @@ function formatHoraRange({ start, end }) {
   return `${formatHour12(start)}-${formatHour12(end)}`;
 }
 
+// Local-time YYYY-MM-DD (not toISOString(), which converts to UTC and can
+// shift the date depending on the visitor's timezone).
+function toISODate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 // Slots less than MIN_LEAD_HOURS away aren't offered — for any day other
 // than today every slot is already well past that, so this only ever
 // filters today's remaining options.
@@ -79,6 +88,7 @@ function buildDiaOptions() {
           weekdayLabel: weekday.charAt(0).toUpperCase() + weekday.slice(1),
           short: `${day} ${month.slice(0, 3)}`,
           fullLabel: `${weekday} ${day} de ${month}`,
+          isoDate: toISODate(cursor),
           horas,
         });
       }
@@ -319,6 +329,7 @@ export default function Agendar() {
       nombre,
       diaLabel: DIAS[diaSel].fullLabel,
       horaLabel: HORAS[horaSel].label,
+      fecha: DIAS[diaSel].isoDate,
       detalles: detalles || undefined,
       placeId: place?.placeId,
       lat: place?.lat,

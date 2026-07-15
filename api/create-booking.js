@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
 import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
+import { notifyOpsApp } from '../server/opsApp.js';
 
 // Used for the "pagar a la entrega" path — no online charge, so we can
 // confirm the booking immediately instead of waiting on a payment webhook.
@@ -19,6 +20,7 @@ export default async function handler(req, res) {
     email,
     diaLabel,
     horaLabel,
+    fecha,
     detalles,
     placeId,
     lat,
@@ -50,6 +52,7 @@ export default async function handler(req, res) {
       email: email || null,
       dia_label: diaLabel,
       hora_label: horaLabel,
+      fecha_recoleccion: fecha || null,
       detalles: detalles || null,
       pago_metodo: 'entrega',
       pago_status: 'pago_entrega',
@@ -75,6 +78,14 @@ export default async function handler(req, res) {
         .eq('id', booking.id);
     }
     await sendOwnerBookingNotification(booking);
+
+    const opsResult = await notifyOpsApp(booking);
+    if (opsResult.ok) {
+      await supabase
+        .from('bookings')
+        .update({ ops_pedido_id: opsResult.pedidoId, ops_cliente_id: opsResult.clienteId })
+        .eq('id', booking.id);
+    }
 
     res.status(200).json({ id: booking.id });
   } catch (err) {

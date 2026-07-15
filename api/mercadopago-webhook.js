@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { getPayment } from '../server/mercadopago.js';
 import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
+import { notifyOpsApp } from '../server/opsApp.js';
 
 const STATUS_MAP = {
   approved: 'pagado',
@@ -62,6 +63,14 @@ export default async function handler(req, res) {
           .eq('id', booking.id);
       }
       await sendOwnerBookingNotification(booking);
+
+      const opsResult = await notifyOpsApp(booking);
+      if (opsResult.ok) {
+        await supabase
+          .from('bookings')
+          .update({ ops_pedido_id: opsResult.pedidoId, ops_cliente_id: opsResult.clienteId })
+          .eq('id', booking.id);
+      }
     }
 
     res.status(200).json({ ok: true });
