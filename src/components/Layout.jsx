@@ -19,8 +19,7 @@ function Header() {
   return (
     <header className={styles.header}>
       <NavLink to="/" className={styles.logo}>
-        <span className={styles.logoBadge}>LL</span>
-        <span className={styles.logoText}>La Laundry</span>
+        <img src="/logo.png" alt="La Laundry" className={styles.logoImg} />
       </NavLink>
 
       <nav className={styles.nav}>

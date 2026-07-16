@@ -35,34 +35,15 @@
   text-decoration: none;
 }
 
-.logoBadge {
-  width: 40px;
+.logoImg {
   height: 40px;
-  border-radius: 50%;
-  border: 2px dashed var(--color-orange);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-white-2);
-  font-family: var(--font-display);
-  font-size: 18px;
-}
-
-.logoText {
-  font-family: var(--font-display);
-  font-size: 24px;
-  color: var(--color-white);
-  letter-spacing: 0.5px;
+  width: auto;
+  display: block;
 }
 
 @media (max-width: 640px) {
-  .logoText {
-    font-size: 19px;
-  }
-  .logoBadge {
-    width: 34px;
-    height: 34px;
-    font-size: 15px;
+  .logoImg {
+    height: 32px;
   }
 }
 
