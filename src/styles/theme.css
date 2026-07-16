@@ -8,9 +8,10 @@
   /* Brand accent (logo color) */
   --color-orange: #f37562;
   --color-orange-hover: #dd6046;
-  /* Coral doesn't have enough contrast with either white or the dark teal at
-     normal weight, so buttons/pills on it use a near-black ink instead. */
-  --color-orange-on: #1c2625;
+  /* Coral doesn't have great contrast with light colors at normal weight
+     (near-black would score better on accessibility), but light blue is the
+     brand's chosen look for button text on orange — keep text bold/short. */
+  --color-orange-on: #cdeaec;
 
   --color-bg: #dcf5f6;
   --color-card: #ffffff;
@@ -27,7 +28,6 @@
 
   --color-white: #ffffff;
   --color-white-2: #f2fbfb;
-  --color-nav-inactive: #bfe0e2;
 
   --color-badge-bg: #fbe0da;
   --color-badge-text: #a84a37;

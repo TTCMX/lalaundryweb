@@ -12,7 +12,8 @@
 }
 
 .header {
-  background: var(--color-navy);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border-strong);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -86,7 +87,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--color-white) 30%, transparent);
+  border: 1px solid var(--color-border-strong);
   background: transparent;
   display: flex;
   align-items: center;
@@ -101,7 +102,7 @@
   display: block;
   width: 18px;
   height: 2px;
-  background: var(--color-white);
+  background: var(--color-navy);
   border-radius: 2px;
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
@@ -145,8 +146,8 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--color-navy);
-  border-top: 1px solid color-mix(in srgb, var(--color-white) 15%, transparent);
+  background: var(--color-card);
+  border-top: 1px solid var(--color-border-strong);
   flex-direction: column;
   padding: 8px 20px 16px;
   z-index: 20;
@@ -159,11 +160,11 @@
 }
 
 .mobileMenuLink {
-  color: var(--color-nav-inactive);
+  color: var(--color-text-muted);
   text-decoration: none;
   font-weight: 500;
   padding: 12px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-white) 12%, transparent);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .mobileMenuLink:last-child {
@@ -171,12 +172,12 @@
 }
 
 .mobileMenuLink.active {
-  color: var(--color-text-lighter);
+  color: var(--color-text-strong);
   font-weight: 600;
 }
 
 .navLink {
-  color: var(--color-nav-inactive);
+  color: var(--color-text-muted);
   text-decoration: none;
   font-weight: 500;
   padding-bottom: 4px;
@@ -184,7 +185,7 @@
 }
 
 .navLink.active {
-  color: var(--color-text-lighter);
+  color: var(--color-text-strong);
   font-weight: 600;
   border-bottom-color: var(--color-orange);
 }
