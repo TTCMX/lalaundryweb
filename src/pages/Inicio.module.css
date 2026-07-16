@@ -1,7 +1,7 @@
 .hero {
   position: relative;
   padding: 90px 48px 70px;
-  background: var(--color-navy);
+  background: var(--color-bg);
   overflow: hidden;
 }
 
@@ -37,14 +37,14 @@
   font-family: var(--font-display);
   font-size: 56px;
   line-height: 1.05;
-  color: var(--color-white);
+  color: var(--color-navy);
   margin: 0 0 20px;
 }
 
 .heroText {
   font-size: 19px;
   line-height: 1.6;
-  color: var(--color-text-light);
+  color: var(--color-text-muted);
   margin: 0 0 34px;
   max-width: 520px;
 }
@@ -67,7 +67,7 @@
 .btnSecondary {
   background: transparent;
   border: 2px solid var(--color-border-strong);
-  color: var(--color-text-lighter);
+  color: var(--color-text-muted);
   text-decoration: none;
   font-weight: 600;
   padding: 14px 28px;
