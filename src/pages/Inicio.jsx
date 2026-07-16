@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import PlaceholderImage from '../components/PlaceholderImage.jsx';
 import styles from './Inicio.module.css';
 
 const PASOS = [
@@ -51,22 +50,7 @@ export default function Inicio() {
         </div>
       </section>
 
-      <section className={styles.academyTeaser}>
-        <div className={styles.academyGrid}>
-          <div>
-            <span className={styles.academyEyebrow}>Aprende con nosotros</span>
-            <h2 className={styles.academyTitle}>La Academy</h2>
-            <p className={styles.academyText}>
-              Tips para cuidar tus prendas en casa, cuándo una mancha aún tiene remedio y cuándo
-              ya no se puede salvar una prenda.
-            </p>
-            <Link to="/academy" className={styles.academyLink}>
-              Explorar Academy →
-            </Link>
-          </div>
-          <PlaceholderImage label="foto: proceso de lavado" aspectRatio="16/10" borderRadius={16} />
-        </div>
-      </section>
+      {/* Academy oculta temporalmente — se retoma más adelante. */}
 
       <section className={styles.ctaSection}>
         <div className={styles.ctaBanner}>

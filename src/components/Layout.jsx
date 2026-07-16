@@ -5,7 +5,7 @@ import styles from './Layout.module.css';
 const NAV_LINKS = [
   { to: '/', label: 'Inicio' },
   { to: '/catalogo', label: 'Catálogo' },
-  { to: '/academy', label: 'Academy' },
+  // Academy oculta temporalmente — se retoma más adelante.
 ];
 
 function Header() {
@@ -85,9 +85,6 @@ function Footer() {
       <div className={styles.footerLinks}>
         <NavLink to="/catalogo" className={styles.footerLink}>
           Catálogo
-        </NavLink>
-        <NavLink to="/academy" className={styles.footerLink}>
-          Academy
         </NavLink>
         <NavLink to="/agendar" className={styles.footerLink}>
           Agendar
