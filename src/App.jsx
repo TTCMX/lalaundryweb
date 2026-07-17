@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import Inicio from './pages/Inicio.jsx';
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/agendar" element={<Agendar />} />
         <Route path="/agendar/confirmacion" element={<AgendarConfirmacion />} />
       </Routes>
+      <Analytics />
     </Layout>
   );
 }
