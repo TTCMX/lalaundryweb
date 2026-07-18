@@ -16,6 +16,7 @@ export async function notifyOpsApp(booking) {
         nombre: booking.nombre,
         tel: booking.telefono,
         fecha: booking.fecha_recoleccion,
+        ventana: booking.hora_label || undefined,
         dir: booking.direccion || undefined,
         email: booking.email || undefined,
         notas: booking.detalles || undefined,
