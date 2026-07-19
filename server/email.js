@@ -124,7 +124,7 @@ export function formatOwnerNotificationHtml(booking) {
       { label: 'Cliente', value: booking.es_recurrente ? 'Recurrente' : 'Nuevo' },
       { label: 'Nombre', value: booking.nombre || 'No proporcionado' },
       { label: 'Dirección', value: booking.direccion },
-      { label: 'Código postal', value: booking.cp },
+      { label: 'Código postal', value: booking.cp || 'No proporcionado' },
       { label: 'Teléfono', value: booking.telefono },
       { label: 'Correo del cliente', value: booking.email || 'No proporcionado' },
       { label: 'Horario', value: `${booking.dia_label}, ${booking.hora_label}` },

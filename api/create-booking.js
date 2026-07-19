@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     esRecurrente,
   } = req.body || {};
 
-  if (!direccion || !cp || !telefono || !diaLabel || !horaLabel) {
+  if (!direccion || !telefono || !diaLabel || !horaLabel) {
     res.status(400).json({ error: 'Missing required booking fields' });
     return;
   }
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     const bookingData = {
       nombre: nombre || null,
       direccion,
-      cp,
+      cp: cp || null,
       telefono: normalizePhone(telefono),
       email: email || null,
       dia_label: diaLabel,
