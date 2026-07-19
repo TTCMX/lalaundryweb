@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
+import { normalizePhone } from '../server/phone.js';
 
 // Real (non-abandoned) bookings only — an incomplete lead or a rejected
 // payment shouldn't be treated as "we already have this customer's info".
@@ -21,23 +22,28 @@ export default async function handler(req, res) {
 
   try {
     const supabase = getSupabaseClient();
+    // Matched by normalized (digits-only) phone rather than an exact string
+    // match, since the same customer may type their number differently
+    // between visits (spaces, dashes, +52) and older/imported rows aren't
+    // guaranteed to already be in the normalized format.
+    const target = normalizePhone(telefono);
     const { data, error } = await supabase
       .from('bookings')
-      .select('nombre, direccion, cp, email, place_id, lat, lng')
-      .eq('telefono', telefono.trim())
+      .select('nombre, telefono, direccion, cp, email, place_id, lat, lng')
       .in('pago_status', REAL_STATUSES)
       .not('direccion', 'is', null)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(3000);
     if (error) throw error;
 
-    if (!data) {
+    const match = data?.find((row) => normalizePhone(row.telefono) === target);
+    if (!match) {
       res.status(200).json({ found: false });
       return;
     }
 
-    res.status(200).json({ found: true, customer: data });
+    const { telefono: _telefono, ...customer } = match;
+    res.status(200).json({ found: true, customer });
   } catch (err) {
     console.error('[lookup-customer]', err);
     res.status(500).json({ error: 'internal-error' });

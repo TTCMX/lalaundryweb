@@ -2,6 +2,7 @@ import { getSupabaseClient } from '../server/supabaseClient.js';
 import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
 import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
 import { notifyOpsApp } from '../server/opsApp.js';
+import { normalizePhone } from '../server/phone.js';
 
 // Used for the "pagar a la entrega" path — no online charge, so we can
 // confirm the booking immediately instead of waiting on a payment webhook.
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
       nombre: nombre || null,
       direccion,
       cp,
-      telefono,
+      telefono: normalizePhone(telefono),
       email: email || null,
       dia_label: diaLabel,
       hora_label: horaLabel,

@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { createPreference, getDepositAmount } from '../server/mercadopago.js';
 import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
+import { normalizePhone } from '../server/phone.js';
 
 // Used for the "pagar en línea" path — creates the booking as pendiente,
 // then a MercadoPago Checkout Pro preference for the deposit. The client
@@ -49,7 +50,7 @@ export default async function handler(req, res) {
       nombre: nombre || null,
       direccion,
       cp,
-      telefono,
+      telefono: normalizePhone(telefono),
       email: email || null,
       dia_label: diaLabel,
       hora_label: horaLabel,
