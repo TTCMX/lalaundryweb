@@ -8,7 +8,11 @@ create extension if not exists "pgcrypto";
 create table if not exists coverage_zips (
   cp text primary key,
   activo boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Zone (A-G) used to pick which days/slots this CP gets offered — see
+  -- ZONE_SCHEDULES in src/pages/Agendar.jsx. Null for rows created before
+  -- zone-based scheduling.
+  zona text
 );
 
 -- A row is created as soon as the customer gives a phone number (step 1 of
@@ -110,3 +114,8 @@ alter table bookings add column if not exists es_recurrente boolean not null def
 alter table bookings add column if not exists fecha_recoleccion date;
 alter table bookings add column if not exists ops_pedido_id text;
 alter table bookings add column if not exists ops_cliente_id text;
+
+-- Migration: run this once for zone-based scheduling (adds the column; the
+-- actual CP -> zone data load is a separate one-off SQL file, since it's
+-- 1000+ rows).
+alter table coverage_zips add column if not exists zona text;

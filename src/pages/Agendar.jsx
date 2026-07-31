@@ -8,21 +8,19 @@ import styles from './Agendar.module.css';
 const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Pago', 'Listo'];
 const LAST_STEP = STEP_LABELS.length - 1;
 const DIAS_HORIZON = 6;
-const SATURDAY = 6;
-const TUESDAY = 2;
-const FRIDAY = 5;
 const MIN_LEAD_HOURS = 2;
-// Domingo/Lunes/Miércoles/Jueves get an evening slot too; Martes/Viernes
-// don't; Sábado has no pickups at all (skipped when building the day list).
-const HORA_RANGES_FULL = [
-  { start: 10, end: 13 },
-  { start: 13, end: 16 },
-  { start: 20, end: 22 },
-];
-const HORA_RANGES_SHORT = [
-  { start: 10, end: 13 },
-  { start: 13, end: 16 },
-];
+const HORA_DAYTIME = { start: 10, end: 16 };
+const HORA_EVENING = { start: 20, end: 22 };
+// Which weekdays (0=domingo...6=sábado) get each block, per zone. Zones F/G
+// are serviced via Uber Direct (not this scheduler) so they're never passed
+// here — check-coverage.js only returns a zona for active zones.
+const ZONE_SCHEDULES = {
+  A: { daytime: [1, 2, 3, 4, 5], evening: [0, 1, 3, 4] },
+  B: { daytime: [2, 5], evening: [0, 1, 3, 4] },
+  C: { daytime: [], evening: [0, 1, 3, 4] },
+  D: { daytime: [], evening: [0, 3] },
+  E: { daytime: [], evening: [1, 4] },
+};
 const NEXT_LABELS = [
   'Continuar',
   'Continuar',
@@ -59,8 +57,12 @@ function toISODate(date) {
 // Slots less than MIN_LEAD_HOURS away aren't offered — for any day other
 // than today every slot is already well past that, so this only ever
 // filters today's remaining options.
-function horasFor(date, weekdayIndex) {
-  const ranges = weekdayIndex === TUESDAY || weekdayIndex === FRIDAY ? HORA_RANGES_SHORT : HORA_RANGES_FULL;
+function horasFor(date, weekdayIndex, zona) {
+  const schedule = ZONE_SCHEDULES[zona];
+  if (!schedule) return [];
+  const ranges = [];
+  if (schedule.daytime.includes(weekdayIndex)) ranges.push(HORA_DAYTIME);
+  if (schedule.evening.includes(weekdayIndex)) ranges.push(HORA_EVENING);
   const cutoff = new Date(Date.now() + MIN_LEAD_HOURS * 60 * 60 * 1000);
   return ranges
     .filter((range) => {
@@ -71,27 +73,29 @@ function horasFor(date, weekdayIndex) {
     .map((range) => ({ ...range, label: formatHoraRange(range) }));
 }
 
-function buildDiaOptions() {
+// Zone-less (zona === null, e.g. coverage not resolved yet) yields no days.
+function buildDiaOptions(zona) {
   const days = [];
+  if (!zona) return days;
   const cursor = new Date();
   cursor.setHours(0, 0, 0, 0);
-  while (days.length < DIAS_HORIZON) {
+  let scanned = 0;
+  while (days.length < DIAS_HORIZON && scanned < 60) {
+    scanned++;
     const weekdayIndex = cursor.getDay();
-    if (weekdayIndex !== SATURDAY) {
-      const horas = horasFor(cursor, weekdayIndex);
-      if (horas.length) {
-        const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(cursor);
-        const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(cursor);
-        const day = cursor.getDate();
-        days.push({
-          weekdayIndex,
-          weekdayLabel: weekday.charAt(0).toUpperCase() + weekday.slice(1),
-          short: `${day} ${month.slice(0, 3)}`,
-          fullLabel: `${weekday} ${day} de ${month}`,
-          isoDate: toISODate(cursor),
-          horas,
-        });
-      }
+    const horas = horasFor(cursor, weekdayIndex, zona);
+    if (horas.length) {
+      const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(cursor);
+      const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(cursor);
+      const day = cursor.getDate();
+      days.push({
+        weekdayIndex,
+        weekdayLabel: weekday.charAt(0).toUpperCase() + weekday.slice(1),
+        short: `${day} ${month.slice(0, 3)}`,
+        fullLabel: `${weekday} ${day} de ${month}`,
+        isoDate: toISODate(cursor),
+        horas,
+      });
     }
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -99,15 +103,16 @@ function buildDiaOptions() {
 }
 
 export default function Agendar() {
-  const DIAS = useMemo(buildDiaOptions, []);
   const [step, setStep] = useState(0);
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
   const [direccion, setDireccion] = useState('');
   const [cp, setCp] = useState('');
   const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered
+  const [zona, setZona] = useState(null); // A-E once cobertura === 'covered'
   const [place, setPlace] = useState(null); // { lat, lng, placeId } once chosen from Maps suggestions
   const [nombre, setNombre] = useState('');
+  const DIAS = useMemo(() => buildDiaOptions(zona), [zona]);
   const [diaSel, setDiaSel] = useState(0);
   const [horaSel, setHoraSel] = useState(0);
   const HORAS = DIAS[diaSel]?.horas || [];
@@ -115,6 +120,13 @@ export default function Agendar() {
     setDiaSel(i);
     setHoraSel(0);
   };
+  // The zone (and therefore DIAS) can change after a day/hora was already
+  // selected under a different zone (e.g. re-checking coverage) — reset the
+  // selection so it doesn't point at a stale/out-of-range option.
+  useEffect(() => {
+    setDiaSel(0);
+    setHoraSel(0);
+  }, [zona]);
   const [detalles, setDetalles] = useState('');
   const [pago, setPago] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -146,8 +158,11 @@ export default function Agendar() {
     }
   };
 
+  // Returns the resolved zona (or null if not covered/failed) so callers
+  // that need to branch on it (e.g. the returning-customer flow) don't have
+  // to wait on a separate state update.
   const checkCoverageFor = async (candidateCp, extra = {}) => {
-    if (!candidateCp?.trim()) return;
+    if (!candidateCp?.trim()) return null;
     setCobertura('checking');
     try {
       const res = await fetch('/api/check-coverage', {
@@ -157,8 +172,13 @@ export default function Agendar() {
       });
       const data = await res.json();
       setCobertura(data.covered ? 'covered' : 'not-covered');
+      const resolvedZona = data.covered ? data.zona || null : null;
+      setZona(resolvedZona);
+      return resolvedZona;
     } catch {
       setCobertura('not-covered');
+      setZona(null);
+      return null;
     }
   };
 
@@ -209,6 +229,7 @@ export default function Agendar() {
             });
           } else {
             setCobertura('idle');
+            setZona(null);
           }
         });
       })
@@ -279,9 +300,19 @@ export default function Agendar() {
         setCp(c.cp || '');
         setEmail((prev) => prev || c.email || '');
         if (c.place_id) setPlace({ placeId: c.place_id, lat: c.lat, lng: c.lng });
-        setCobertura('covered');
         setEsRecurrente(true);
-        setStep(3);
+
+        // Need their zone to know which days/slots to offer — re-derive it
+        // from their CP on file. If there's no CP saved (older customers,
+        // imported records) or the zone can't be resolved, fall back to the
+        // address step so they confirm it fresh via Maps.
+        const resolvedZona = c.cp ? await checkCoverageFor(c.cp) : null;
+        if (resolvedZona) {
+          setStep(3);
+        } else {
+          setCobertura('idle');
+          setStep(1);
+        }
       } else {
         setStep(1);
       }
@@ -459,6 +490,7 @@ export default function Agendar() {
                   setDireccion(e.target.value);
                   setPlace(null);
                   setCobertura('idle');
+                  setZona(null);
                 }}
                 onBlur={handleDireccionBlur}
                 placeholder="Empieza a escribir tu calle y elige una sugerencia"

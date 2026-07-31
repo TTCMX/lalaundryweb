@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from('coverage_zips')
-      .select('cp')
+      .select('zona')
       .eq('cp', cp.trim())
       .eq('activo', true)
       .maybeSingle();
@@ -37,6 +37,8 @@ export default async function handler(req, res) {
     const covered = !!data;
 
     // Not a booking — just a demand signal for planning future coverage.
+    // Also logged for CPs whose zone isn't active yet (e.g. Uber Direct
+    // zones), since "activo=false" makes them fail the match above too.
     if (!covered) {
       const { error: leadError } = await supabase.from('coverage_leads').insert({
         direccion: direccion || null,
@@ -48,7 +50,7 @@ export default async function handler(req, res) {
       if (leadError) console.error('[check-coverage] failed to log lead:', leadError);
     }
 
-    res.status(200).json({ covered });
+    res.status(200).json({ covered, zona: data?.zona || null });
   } catch (err) {
     console.error('[check-coverage]', err);
     res.status(500).json({ error: 'internal-error' });
