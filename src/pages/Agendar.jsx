@@ -111,7 +111,7 @@ export default function Agendar() {
   const [email, setEmail] = useState('');
   const [direccion, setDireccion] = useState('');
   const [cp, setCp] = useState('');
-  const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered
+  const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered | externo
   const [zona, setZona] = useState(null); // A-E once cobertura === 'covered'
   const [place, setPlace] = useState(null); // { lat, lng, placeId } once chosen from Maps suggestions
   const [nombre, setNombre] = useState('');
@@ -183,6 +183,13 @@ export default function Agendar() {
         body: JSON.stringify({ cp: candidateCp.trim(), ...extra }),
       });
       const data = await res.json();
+      if (data.externo) {
+        // Known zone, but served via Uber Direct instead of our own
+        // scheduler for now — can't proceed to Horario from here.
+        setCobertura('externo');
+        setZona(null);
+        return null;
+      }
       setCobertura(data.covered ? 'covered' : 'not-covered');
       const resolvedZona = data.covered ? data.zona || null : null;
       setZona(resolvedZona);
@@ -537,6 +544,20 @@ export default function Agendar() {
                   </span>
                   <span className={styles.successText}>
                     ¡Buenas noticias! Tenemos cobertura en tu zona.
+                  </span>
+                </div>
+              )}
+              {cobertura === 'externo' && (
+                <div className={styles.successBanner}>
+                  <span className={styles.successIcon}>
+                    <CheckIcon />
+                  </span>
+                  <span className={styles.successText}>
+                    ¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace
+                    con un proveedor externo (Uber Direct). A partir de $1,000 el transporte es
+                    gratis; entre $500 y $1,000 tiene un costo de $100; en pedidos menores a $500
+                    el costo es de $200. El anticipo que pagues se descuenta del total de tu
+                    pedido.
                   </span>
                 </div>
               )}
