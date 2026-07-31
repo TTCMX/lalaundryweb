@@ -11,9 +11,7 @@ const DIAS_HORIZON = 6;
 const MIN_LEAD_HOURS = 2;
 const HORA_DAYTIME = { start: 10, end: 16 };
 const HORA_EVENING = { start: 20, end: 22 };
-// Which weekdays (0=domingo...6=sábado) get each block, per zone. Zones F/G
-// are serviced via Uber Direct (not this scheduler) so they're never passed
-// here — check-coverage.js only returns a zona for active zones.
+// Which weekdays (0=domingo...6=sábado) get each block, per zone.
 const ZONE_SCHEDULES = {
   A: { daytime: [1, 2, 3, 4, 5], evening: [0, 1, 3, 4] },
   B: { daytime: [2, 5], evening: [0, 1, 3, 4] },
@@ -21,7 +19,16 @@ const ZONE_SCHEDULES = {
   D: { daytime: [], evening: [0, 3] },
   E: { daytime: [], evening: [1, 4] },
 };
-// Zones where "pagar a la entrega" is offered; every other zone (E for now)
+// Serviced via Uber Direct instead of our own fleet: no hora blocks, just a
+// day — the exact time is coordinated over WhatsApp afterward.
+const EXTERNAL_ZONES = ['F', 'G'];
+const HORA_WHATSAPP_LABEL = 'Por confirmar por WhatsApp';
+const UBER_DIRECT_MESSAGE =
+  '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
+  'proveedor externo (Uber Direct). A partir de $1,000 el transporte es gratis; entre $500 y ' +
+  '$1,000 tiene un costo de $100; en pedidos menores a $500 el costo es de $200. El anticipo ' +
+  'que pagues se descuenta del total de tu pedido.';
+// Zones where "pagar a la entrega" is offered; every other zone (E, F, G)
 // only gets "pagar anticipo en línea".
 const ENTREGA_ZONES = ['A', 'B', 'C', 'D'];
 const NEXT_LABELS = [
@@ -61,6 +68,11 @@ function toISODate(date) {
 // than today every slot is already well past that, so this only ever
 // filters today's remaining options.
 function horasFor(date, weekdayIndex, zona) {
+  if (EXTERNAL_ZONES.includes(zona)) {
+    // Day-only — no specific hour to compare against a lead-time cutoff, so
+    // every day in the horizon (except Saturday) is offered as-is.
+    return weekdayIndex === 6 ? [] : [{ label: HORA_WHATSAPP_LABEL }];
+  }
   const schedule = ZONE_SCHEDULES[zona];
   if (!schedule) return [];
   const ranges = [];
@@ -543,7 +555,9 @@ export default function Agendar() {
                     <CheckIcon />
                   </span>
                   <span className={styles.successText}>
-                    ¡Buenas noticias! Tenemos cobertura en tu zona.
+                    {EXTERNAL_ZONES.includes(zona)
+                      ? UBER_DIRECT_MESSAGE
+                      : '¡Buenas noticias! Tenemos cobertura en tu zona.'}
                   </span>
                 </div>
               )}
@@ -552,13 +566,7 @@ export default function Agendar() {
                   <span className={styles.successIcon}>
                     <CheckIcon />
                   </span>
-                  <span className={styles.successText}>
-                    ¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace
-                    con un proveedor externo (Uber Direct). A partir de $1,000 el transporte es
-                    gratis; entre $500 y $1,000 tiene un costo de $100; en pedidos menores a $500
-                    el costo es de $200. El anticipo que pagues se descuenta del total de tu
-                    pedido.
-                  </span>
+                  <span className={styles.successText}>{UBER_DIRECT_MESSAGE}</span>
                 </div>
               )}
               {cobertura === 'not-covered' && (
@@ -628,26 +636,36 @@ export default function Agendar() {
                   </button>
                 ))}
               </div>
-              <div className={styles.horasGrid} style={{ gridTemplateColumns: `repeat(${HORAS.length}, 1fr)` }}>
-                {HORAS.map((hora, i) => {
-                  const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
-                  const isFull = count >= slotMax;
-                  return (
-                    <button
-                      key={hora.label}
-                      className={cx(
-                        styles.choiceButton,
-                        horaSel === i && styles.choiceButtonSelected,
-                        isFull && styles.choiceButtonDisabled
-                      )}
-                      onClick={() => setHoraSel(i)}
-                      disabled={isFull}
-                    >
-                      {isFull ? 'Lleno' : hora.label}
-                    </button>
-                  );
-                })}
-              </div>
+              {EXTERNAL_ZONES.includes(zona) ? (
+                <p className={styles.hint}>
+                  Coordinaremos el horario exacto de recolección por WhatsApp una vez confirmado
+                  el día.
+                </p>
+              ) : (
+                <div className={styles.horasGrid} style={{ gridTemplateColumns: `repeat(${HORAS.length}, 1fr)` }}>
+                  {HORAS.map((hora, i) => {
+                    const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
+                    const isFull = count >= slotMax;
+                    return (
+                      <button
+                        key={hora.label}
+                        className={cx(
+                          styles.choiceButton,
+                          horaSel === i && styles.choiceButtonSelected,
+                          isFull && styles.choiceButtonDisabled
+                        )}
+                        onClick={() => setHoraSel(i)}
+                        disabled={isFull}
+                      >
+                        {isFull ? 'Lleno' : hora.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {EXTERNAL_ZONES.includes(zona) && selectedHoraCount >= slotMax && (
+                <p className={styles.errorMessage}>Ese día ya está lleno. Elige otro.</p>
+              )}
               {submitError && <p className={styles.errorMessage}>{submitError}</p>}
             </>
           )}
