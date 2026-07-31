@@ -21,6 +21,9 @@ const ZONE_SCHEDULES = {
   D: { daytime: [], evening: [0, 3] },
   E: { daytime: [], evening: [1, 4] },
 };
+// Zones where "pagar a la entrega" is offered; every other zone (E for now)
+// only gets "pagar anticipo en línea".
+const ENTREGA_ZONES = ['A', 'B', 'C', 'D'];
 const NEXT_LABELS = [
   'Continuar',
   'Continuar',
@@ -129,6 +132,15 @@ export default function Agendar() {
   }, [zona]);
   const [detalles, setDetalles] = useState('');
   const [pago, setPago] = useState(null);
+  const entregaAllowed = !!zona && ENTREGA_ZONES.includes(zona);
+  // Zones without "pagar a la entrega" only offer paying online — force it
+  // as soon as the zone is known so neither the Pago step nor the
+  // returning-customer quick-finalize path can slip through with a cash
+  // on delivery booking there.
+  useEffect(() => {
+    if (zona && !entregaAllowed) setPago('linea');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zona]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [slotCounts, setSlotCounts] = useState({});
@@ -411,10 +423,13 @@ export default function Agendar() {
     lookingUp;
   const showNav = step < LAST_STEP;
   const canBack = step > 0;
-  const canSkip = step === 4 || step === 5;
+  // Skipping Pago only makes sense where "a la entrega" is a real option —
+  // otherwise pago is already forced to 'linea' and there's nothing to skip.
+  const canSkip = step === 4 || (step === 5 && entregaAllowed);
   const isLastStep = step === 5;
   // Returning customers skip Detalles/Pago entirely — picking a slot and
-  // confirming finalizes the booking right away (pago a la entrega).
+  // confirming finalizes the booking right away (pago a la entrega, unless
+  // their zone forces pago='linea', in which case this redirects to pay).
   const isQuickFinalizeStep = esRecurrente && step === 3;
   const onNext = isLastStep || isQuickFinalizeStep ? finalizarReserva : handleContinue;
   const onSkip = isLastStep ? finalizarReserva : siguiente;
@@ -637,9 +652,13 @@ export default function Agendar() {
             <>
               <h2 className={styles.stepHeading}>Pago</h2>
               <p className={styles.stepSubtextTight}>
-                Puedes pagar un anticipo en línea o el total a la entrega.
+                {entregaAllowed
+                  ? 'Puedes pagar un anticipo en línea o el total a la entrega.'
+                  : 'En tu zona, el anticipo se paga en línea para confirmar tu recolección.'}
               </p>
-              <span className={styles.optionalBadge}>Puedes omitir este paso</span>
+              {entregaAllowed && (
+                <span className={styles.optionalBadge}>Puedes omitir este paso</span>
+              )}
               <div className={styles.pagoOptions}>
                 <button
                   className={cx(styles.pagoOption, pago === 'linea' && styles.pagoOptionSelected)}
@@ -650,15 +669,17 @@ export default function Agendar() {
                     Te llevamos a MercadoPago para completar el pago de forma segura.
                   </div>
                 </button>
-                <button
-                  className={cx(styles.pagoOption, pago === 'entrega' && styles.pagoOptionSelected)}
-                  onClick={() => setPago('entrega')}
-                >
-                  <div className={styles.pagoOptionTitle}>Pagar a la entrega</div>
-                  <div className={styles.pagoOptionDesc}>
-                    Con tarjeta o efectivo cuando recibas tu pedido.
-                  </div>
-                </button>
+                {entregaAllowed && (
+                  <button
+                    className={cx(styles.pagoOption, pago === 'entrega' && styles.pagoOptionSelected)}
+                    onClick={() => setPago('entrega')}
+                  >
+                    <div className={styles.pagoOptionTitle}>Pagar a la entrega</div>
+                    <div className={styles.pagoOptionDesc}>
+                      Con tarjeta o efectivo cuando recibas tu pedido.
+                    </div>
+                  </button>
+                )}
               </div>
               {submitError && <p className={styles.errorMessage}>{submitError}</p>}
             </>
