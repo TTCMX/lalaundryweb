@@ -19,10 +19,19 @@ const ZONE_SCHEDULES = {
   D: { daytime: [], evening: [0, 3] },
   E: { daytime: [], evening: [1, 4] },
 };
-// Serviced via Uber Direct instead of our own fleet: no hora blocks, just a
-// day — the exact time is coordinated over WhatsApp afterward.
+// Serviced via Uber Direct instead of our own fleet: domingo-jueves only,
+// in 2-hour "preferred" windows (not a hard guarantee like the other
+// zones) — Uber Direct confirms the exact time over WhatsApp.
 const EXTERNAL_ZONES = ['F', 'G'];
-const HORA_WHATSAPP_LABEL = 'Por confirmar por WhatsApp';
+const EXTERNAL_DAYS = [0, 1, 2, 3, 4]; // domingo-jueves
+const EXTERNAL_RANGES = [
+  { start: 10, end: 12 },
+  { start: 12, end: 14 },
+  { start: 14, end: 16 },
+  { start: 16, end: 18 },
+  { start: 18, end: 20 },
+  { start: 20, end: 22 },
+];
 const UBER_DIRECT_MESSAGE =
   '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
   'proveedor externo (Uber Direct). A partir de $1,000 el transporte es gratis; entre $500 y ' +
@@ -68,16 +77,16 @@ function toISODate(date) {
 // than today every slot is already well past that, so this only ever
 // filters today's remaining options.
 function horasFor(date, weekdayIndex, zona) {
+  let ranges;
   if (EXTERNAL_ZONES.includes(zona)) {
-    // Day-only — no specific hour to compare against a lead-time cutoff, so
-    // every day in the horizon (except Saturday) is offered as-is.
-    return weekdayIndex === 6 ? [] : [{ label: HORA_WHATSAPP_LABEL }];
+    ranges = EXTERNAL_DAYS.includes(weekdayIndex) ? EXTERNAL_RANGES : [];
+  } else {
+    const schedule = ZONE_SCHEDULES[zona];
+    if (!schedule) return [];
+    ranges = [];
+    if (schedule.daytime.includes(weekdayIndex)) ranges.push(HORA_DAYTIME);
+    if (schedule.evening.includes(weekdayIndex)) ranges.push(HORA_EVENING);
   }
-  const schedule = ZONE_SCHEDULES[zona];
-  if (!schedule) return [];
-  const ranges = [];
-  if (schedule.daytime.includes(weekdayIndex)) ranges.push(HORA_DAYTIME);
-  if (schedule.evening.includes(weekdayIndex)) ranges.push(HORA_EVENING);
   const cutoff = new Date(Date.now() + MIN_LEAD_HOURS * 60 * 60 * 1000);
   return ranges
     .filter((range) => {
@@ -382,6 +391,15 @@ export default function Agendar() {
   const finalizarReserva = async () => {
     setSubmitError('');
     setSubmitting(true);
+    // Uber Direct fulfills F/G, not our own fleet — flag it in the notes
+    // (which also flow through to the ops app's "notas" field) along with
+    // the preferred window the customer picked, since hora_label there
+    // isn't a hard-guaranteed slot the way it is for other zones.
+    const detallesFinal = EXTERNAL_ZONES.includes(zona)
+      ? [`Transporte por tercero. Horario preferido: ${HORAS[horaSel].label}.`, detalles || null]
+          .filter(Boolean)
+          .join(' ')
+      : detalles || undefined;
     const payload = {
       bookingId: bookingIdRef.current,
       telefono,
@@ -392,7 +410,7 @@ export default function Agendar() {
       diaLabel: DIAS[diaSel].fullLabel,
       horaLabel: HORAS[horaSel].label,
       fecha: DIAS[diaSel].isoDate,
-      detalles: detalles || undefined,
+      detalles: detallesFinal,
       placeId: place?.placeId,
       lat: place?.lat,
       lng: place?.lng,
@@ -636,36 +654,32 @@ export default function Agendar() {
                   </button>
                 ))}
               </div>
-              {EXTERNAL_ZONES.includes(zona) ? (
+              {EXTERNAL_ZONES.includes(zona) && (
                 <p className={styles.hint}>
-                  Coordinaremos el horario exacto de recolección por WhatsApp una vez confirmado
-                  el día.
+                  Este es tu horario preferido — un proveedor externo (Uber Direct) lo confirma
+                  por WhatsApp.
                 </p>
-              ) : (
-                <div className={styles.horasGrid} style={{ gridTemplateColumns: `repeat(${HORAS.length}, 1fr)` }}>
-                  {HORAS.map((hora, i) => {
-                    const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
-                    const isFull = count >= slotMax;
-                    return (
-                      <button
-                        key={hora.label}
-                        className={cx(
-                          styles.choiceButton,
-                          horaSel === i && styles.choiceButtonSelected,
-                          isFull && styles.choiceButtonDisabled
-                        )}
-                        onClick={() => setHoraSel(i)}
-                        disabled={isFull}
-                      >
-                        {isFull ? 'Lleno' : hora.label}
-                      </button>
-                    );
-                  })}
-                </div>
               )}
-              {EXTERNAL_ZONES.includes(zona) && selectedHoraCount >= slotMax && (
-                <p className={styles.errorMessage}>Ese día ya está lleno. Elige otro.</p>
-              )}
+              <div className={styles.horasGrid} style={{ gridTemplateColumns: `repeat(${HORAS.length}, 1fr)` }}>
+                {HORAS.map((hora, i) => {
+                  const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
+                  const isFull = count >= slotMax;
+                  return (
+                    <button
+                      key={hora.label}
+                      className={cx(
+                        styles.choiceButton,
+                        horaSel === i && styles.choiceButtonSelected,
+                        isFull && styles.choiceButtonDisabled
+                      )}
+                      onClick={() => setHoraSel(i)}
+                      disabled={isFull}
+                    >
+                      {isFull ? 'Lleno' : hora.label}
+                    </button>
+                  );
+                })}
+              </div>
               {submitError && <p className={styles.errorMessage}>{submitError}</p>}
             </>
           )}
