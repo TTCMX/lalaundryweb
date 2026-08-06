@@ -86,6 +86,8 @@ export default function Cobertura() {
                 <p className={styles.resultTitle}>Tenemos cobertura — estás en la zona {zona}.</p>
                 {info && (
                   <p className={styles.resultText}>
+                    {grupo === 'FG' &&
+                      'La recolección y entrega en tu zona se hace con un proveedor externo (Uber Direct). '}
                     El transporte es gratis en pedidos de {info.minimo} o más. En pedidos
                     menores, el transporte cuesta {info.costo}.
                   </p>
