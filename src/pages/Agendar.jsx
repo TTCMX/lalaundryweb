@@ -34,9 +34,9 @@ const EXTERNAL_RANGES = [
 ];
 const UBER_DIRECT_MESSAGE =
   '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
-  'proveedor externo (Uber Direct). A partir de $1,000 el transporte es gratis; entre $500 y ' +
-  '$1,000 tiene un costo de $100; en pedidos menores a $500 el costo es de $200. El anticipo ' +
-  'que pagues se descuenta del total de tu pedido.';
+  'proveedor externo (Uber Direct). El transporte es gratis en pedidos de $1,000 o más; en ' +
+  'pedidos menores, el transporte cuesta $250. El anticipo que pagues se descuenta del total ' +
+  'de tu pedido.';
 // Zones where "pagar a la entrega" is offered; every other zone (E, F, G)
 // only gets "pagar anticipo en línea".
 const ENTREGA_ZONES = ['A', 'B', 'C', 'D'];

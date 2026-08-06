@@ -1,0 +1,159 @@
+.section {
+  padding: 12px 48px 60px;
+  flex: 1;
+}
+
+.card {
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  padding: 36px 40px;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.inputRow {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.input {
+  flex: 1;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  font-size: 15px;
+}
+
+.button {
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.button:disabled {
+  background: var(--color-border-strong);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.resultBanner {
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.resultBannerError {
+  background: oklch(0.94 0.05 25);
+  border-color: oklch(0.7 0.1 25);
+}
+
+.resultIcon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-success-icon-bg);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.resultIconError {
+  background: oklch(0.55 0.15 25);
+}
+
+.resultTitle {
+  font-size: 14px;
+  color: var(--color-success-text);
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.resultBannerError .resultTitle {
+  color: oklch(0.35 0.1 25);
+}
+
+.resultText {
+  font-size: 13px;
+  color: var(--color-success-text);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.resultBannerError .resultText {
+  color: oklch(0.35 0.1 25);
+}
+
+.groupTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 28px;
+}
+
+.groupTable th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--color-border-strong);
+}
+
+.groupTable td {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-strong);
+  font-weight: 600;
+}
+
+.groupTable tr:last-child td {
+  border-bottom: none;
+}
+
+.agendarLink {
+  display: inline-block;
+  margin-top: 24px;
+  color: var(--color-orange);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 560px) {
+  .section {
+    padding: 8px 20px 40px;
+  }
+  .card {
+    padding: 24px 22px;
+  }
+  .inputRow {
+    flex-direction: column;
+  }
+}
