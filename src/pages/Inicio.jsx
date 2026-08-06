@@ -10,7 +10,6 @@ const PASOS = [
 
 const DATOS = [
   { valor: '72h', label: 'tiempo estimado de entrega' },
-  { valor: '$300', label: 'para envío y recolección gratis' },
   { valor: '100%', label: 'a domicilio, sin filas' },
 ];
 
@@ -56,10 +55,7 @@ export default function Inicio() {
         <div className={styles.ctaBanner}>
           <div>
             <h2 className={styles.ctaTitle}>¿Listo para agendar tu recolección?</h2>
-            <p className={styles.ctaText}>
-              Valida cobertura, elige horario y listo. Entrega y recolección gratis en órdenes
-              superiores a $300.
-            </p>
+            <p className={styles.ctaText}>Valida cobertura, elige horario y listo.</p>
             <Link to="/agendar" className={styles.btnPrimary} style={{ padding: '14px 28px', fontSize: 15 }}>
               Agendar ahora
             </Link>

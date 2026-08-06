@@ -12,7 +12,7 @@ const PROCESO = [
 const CATEGORIAS = [
   {
     nombre: 'Lavandería',
-    nota: 'Recolección y entrega gratis en órdenes +$300 · ~72h',
+    nota: 'Recolección y entrega en ~72h',
     items: [
       { nombre: 'Ropa y ropa de cama', precio: '$40', detalle: 'Por kg' },
       { nombre: 'Edredón', precio: '$160', detalle: 'Matrimonial +$10, Queen +$20, King +$30, Pluma +$55' },
@@ -28,7 +28,6 @@ const CATEGORIAS = [
   },
   {
     nombre: 'Tintorería',
-    nota: 'Recolección y entrega gratis en órdenes +$300',
     items: [
       { nombre: 'Saco', precio: '$140', detalle: '' },
       { nombre: 'Vestido', precio: '$200', detalle: '' },
@@ -46,7 +45,6 @@ const CATEGORIAS = [
   },
   {
     nombre: 'Otros servicios',
-    nota: 'Recolección y entrega gratis en órdenes +$300',
     items: [
       { nombre: 'Planchado', precio: '$35', detalle: '' },
       { nombre: 'Planchado largo', precio: '$60', detalle: '' },
@@ -69,7 +67,7 @@ export default function Catalogo() {
       <PageHero
         badge="Catálogo"
         title="Precios y procesos"
-        text="Precios claros por prenda. Recolección y entrega gratis en órdenes superiores a $300."
+        text="Precios claros por prenda."
         maxWidth={560}
       />
 
