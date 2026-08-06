@@ -244,6 +244,12 @@
   border-bottom: none;
 }
 
+.promoFootnote {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 10px 0 0;
+}
+
 .promoHighlight {
   font-family: var(--font-display);
   font-size: 48px;

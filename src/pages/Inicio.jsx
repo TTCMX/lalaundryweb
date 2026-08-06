@@ -74,7 +74,7 @@ export default function Inicio() {
                 <tr>
                   <th># de pares</th>
                   <th>Precio</th>
-                  <th>Transporte</th>
+                  <th>Transporte*</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,6 +87,7 @@ export default function Inicio() {
                 ))}
               </tbody>
             </table>
+            <p className={styles.promoFootnote}>*Aplica para transporte en zona A, B y C.</p>
           </div>
           <div className={styles.promoCard}>
             <span className={styles.promoBadge}>Promo</span>
