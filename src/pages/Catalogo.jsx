@@ -59,6 +59,15 @@ const CATEGORIAS = [
       { nombre: 'Lavado enzimático', precio: 'Desde $100', detalle: '' },
     ],
   },
+  {
+    nombre: 'Limpieza en tu hogar',
+    nota: 'Se realiza en tu domicilio, sin recolección',
+    items: [
+      { nombre: 'Salas', precio: 'Desde $900', detalle: '3 plazas' },
+      { nombre: 'Tapetes', precio: 'Desde $600', detalle: '3m²' },
+      { nombre: 'Colchones', precio: 'Desde $900', detalle: '' },
+    ],
+  },
 ];
 
 export default function Catalogo() {
