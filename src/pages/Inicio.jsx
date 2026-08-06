@@ -13,6 +13,15 @@ const DATOS = [
   { valor: '100%', label: 'a domicilio, sin filas' },
 ];
 
+const PROMO_TENIS = [
+  { pares: '1', precio: '$150', transporte: '$100' },
+  { pares: '2', precio: '$280', transporte: '$20' },
+  { pares: '3', precio: '$390', transporte: 'Gratis' },
+  { pares: '4', precio: '$480', transporte: 'Gratis' },
+  { pares: '5', precio: '$550', transporte: 'Gratis' },
+  { pares: '6 o más', precio: '$100 por par', transporte: 'Gratis' },
+];
+
 export default function Inicio() {
   return (
     <>
@@ -50,6 +59,45 @@ export default function Inicio() {
       </section>
 
       {/* Academy oculta temporalmente — se retoma más adelante. */}
+
+      <section className={styles.promos}>
+        <h2 className={styles.stepsTitle}>Promociones activas</h2>
+        <div className={styles.promosGrid}>
+          <div className={styles.promoCard}>
+            <span className={styles.promoBadge}>Promo</span>
+            <h3 className={styles.promoTitle}>Lavado de tenis</h3>
+            <p className={styles.promoDesc}>
+              Entre más pares laves en una misma recolección, menos pagas de transporte.
+            </p>
+            <table className={styles.promoTable}>
+              <thead>
+                <tr>
+                  <th># de pares</th>
+                  <th>Precio</th>
+                  <th>Transporte</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PROMO_TENIS.map((row) => (
+                  <tr key={row.pares}>
+                    <td>{row.pares}</td>
+                    <td>{row.precio}</td>
+                    <td>{row.transporte}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className={styles.promoCard}>
+            <span className={styles.promoBadge}>Promo</span>
+            <h3 className={styles.promoTitle}>Edredones y cubrecolchones</h3>
+            <p className={styles.promoDesc}>
+              Llévate 3 piezas y paga solo 2 — la de menor precio va gratis.
+            </p>
+            <div className={styles.promoHighlight}>3x2</div>
+          </div>
+        </div>
+      </section>
 
       <section className={styles.ctaSection}>
         <div className={styles.ctaBanner}>

@@ -170,6 +170,88 @@
   text-decoration: none;
 }
 
+.promos {
+  padding: 64px 48px;
+}
+
+.promosGrid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.promoCard {
+  background: var(--color-card);
+  border-radius: 16px;
+  padding: 28px 32px;
+  border: 1px solid var(--color-border);
+}
+
+.promoBadge {
+  display: inline-block;
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+
+.promoTitle {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--color-navy);
+  margin: 0 0 8px;
+}
+
+.promoDesc {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.promoTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.promoTable th {
+  text-align: left;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--color-border-strong);
+}
+
+.promoTable td {
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-strong);
+  font-weight: 600;
+}
+
+.promoTable tr:last-child td {
+  border-bottom: none;
+}
+
+.promoHighlight {
+  font-family: var(--font-display);
+  font-size: 48px;
+  color: var(--color-orange);
+  text-align: center;
+  padding: 24px 0 8px;
+}
+
 .ctaSection {
   padding: 64px 48px;
 }
@@ -237,6 +319,7 @@
   }
   .steps,
   .academyTeaser,
+  .promos,
   .ctaSection {
     padding: 48px 32px;
   }
@@ -247,6 +330,9 @@
   .academyGrid {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+  .promosGrid {
+    grid-template-columns: 1fr;
   }
   .ctaBanner {
     grid-template-columns: 1fr;
@@ -277,6 +363,7 @@
   }
   .steps,
   .academyTeaser,
+  .promos,
   .ctaSection {
     padding: 40px 20px;
   }
@@ -287,6 +374,9 @@
   .stepsGrid {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+  .promoCard {
+    padding: 22px 20px;
   }
   .ctaBanner {
     padding: 28px 24px;
