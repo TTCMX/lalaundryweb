@@ -84,6 +84,12 @@ export default function Membresia() {
       });
       const data = await res.json().catch(() => null);
       if (data?.init_point) {
+        // El checkout de MercadoPago no conserva nada nuestro, así que hay
+        // que recordar de este lado quién arrancó el flujo para poder ligar
+        // la suscripción cuando el cliente regrese (ver MembresiaGracias).
+        try {
+          localStorage.setItem('tcc_suscripcion_cliente', data.clienteId);
+        } catch { /* modo privado: se pierde la liga automática, no el pago */ }
         window.location.href = data.init_point;
         return;
       }
