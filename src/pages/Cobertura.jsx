@@ -92,6 +92,12 @@ export default function Cobertura() {
                     menores, el transporte cuesta {info.costo}.
                   </p>
                 )}
+                {grupo === 'FG' && (
+                  <p className={styles.resultAviso}>
+                    Importante: en tu zona solo está disponible lavandería y tenis. Por ahora no
+                    ofrecemos tintorería.
+                  </p>
+                )}
               </div>
             </div>
           )}

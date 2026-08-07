@@ -20,6 +20,11 @@ export async function notifyOpsApp(booking) {
         dir: booking.direccion || undefined,
         email: booking.email || undefined,
         notas: booking.detalles || undefined,
+        // Anticipo ya cobrado en línea. Sin esto el pedido llega a la app
+        // como "Pendiente" y se le puede volver a cobrar el total completo
+        // a alguien que ya pagó su depósito.
+        anticipo: booking.pago_status === 'pagado' ? Number(booking.deposito_monto) || 0 : 0,
+        pagoMetodo: booking.pago_status === 'pagado' ? 'Link de pago' : undefined,
       }),
     });
 

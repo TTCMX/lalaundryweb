@@ -28,6 +28,7 @@ const CATEGORIAS = [
   },
   {
     nombre: 'Tintorería',
+    nota: 'No disponible en zonas F y G',
     items: [
       { nombre: 'Saco', precio: '$140', detalle: '' },
       { nombre: 'Vestido', precio: '$200', detalle: '' },

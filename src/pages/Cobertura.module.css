@@ -110,6 +110,15 @@
   color: oklch(0.35 0.1 25);
 }
 
+/* Zonas F/G: solo lavandería y tenis, sin tintorería. */
+.resultAviso {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 8px 0 0;
+  color: oklch(0.42 0.09 70);
+}
+
 .groupTable {
   width: 100%;
   border-collapse: collapse;

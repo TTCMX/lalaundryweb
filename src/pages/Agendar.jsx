@@ -32,6 +32,11 @@ function buildHourRanges(startHour, endHour) {
   return ranges;
 }
 const EXTERNAL_RANGES = buildHourRanges(10, 21); // 10am a 9pm
+// Las zonas externas solo reciben lavandería y tenis — la tintorería no se
+// ofrece ahí, así que hay que avisarlo antes de que agenden.
+const SIN_TINTORERIA_MESSAGE =
+  'Importante: en tu zona solo está disponible lavandería y tenis. Por ahora no ofrecemos ' +
+  'tintorería (sacos, vestidos, abrigos y demás prendas de tintorería).';
 const UBER_DIRECT_MESSAGE =
   '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
   'proveedor externo (Uber Direct). El transporte es gratis en pedidos de $1,000 o más; en ' +
@@ -587,6 +592,12 @@ export default function Agendar() {
                   <span className={styles.successText}>{UBER_DIRECT_MESSAGE}</span>
                 </div>
               )}
+              {(cobertura === 'externo' ||
+                (cobertura === 'covered' && EXTERNAL_ZONES.includes(zona))) && (
+                <div className={styles.avisoBanner}>
+                  <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
+                </div>
+              )}
               {cobertura === 'not-covered' && (
                 <div className={cx(styles.successBanner, styles.errorBanner)}>
                   <span className={cx(styles.successIcon, styles.errorIcon)}>
@@ -655,10 +666,15 @@ export default function Agendar() {
                 ))}
               </div>
               {EXTERNAL_ZONES.includes(zona) && (
-                <p className={styles.hint}>
-                  Este es tu horario preferido — un proveedor externo (Uber Direct) lo confirma
-                  por WhatsApp.
-                </p>
+                <>
+                  <p className={styles.hint}>
+                    Este es tu horario preferido — un proveedor externo (Uber Direct) lo confirma
+                    por WhatsApp.
+                  </p>
+                  <div className={styles.avisoBanner} style={{ marginTop: 0, marginBottom: 16 }}>
+                    <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
+                  </div>
+                </>
               )}
               <div className={styles.horasGrid}>
                 {HORAS.map((hora, i) => {
