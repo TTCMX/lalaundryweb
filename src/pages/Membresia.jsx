@@ -8,28 +8,27 @@ import styles from './Membresia.module.css';
 // (necesita el access token, que nunca puede estar en el navegador).
 const OPS_API = import.meta.env.VITE_OPS_API_URL || 'https://app.lalaundry.xyz';
 
-// OJO — beneficios PROPUESTOS, pendientes de confirmar con el negocio.
-// Los precios sí son los reales de los planes en MercadoPago.
 const NIVELES = {
   plus: {
     nombre: 'The Clean Club +',
-    resumen: 'Para quien manda ropa cada mes y no quiere pensar en el envío.',
+    resumen: 'Para quien lava seguido y quiere descuento fijo en todo.',
     beneficios: [
-      'Transporte gratis en todas tus recolecciones, sin mínimo de pedido',
-      '10% de descuento sobre todo el catálogo',
-      'Prioridad para elegir horario de recolección',
+      '10% de descuento en todas tus compras',
+      'Promociones exclusivas para miembros todos los meses',
+      'Acceso a preventas y lanzamientos',
     ],
   },
   vip: {
     nombre: 'The Clean Club VIP',
-    resumen: 'Para quien quiere el servicio completo y atención preferente.',
+    resumen: 'El nivel más completo: mayor descuento, puntos cada mes y atención prioritaria.',
     destacado: true,
     beneficios: [
-      'Todo lo que incluye The Clean Club +',
-      '20% de descuento sobre todo el catálogo',
-      'Recolección y entrega express',
-      'Desmanchado sin costo en cada pedido',
-      'Atención prioritaria por WhatsApp',
+      '15% de descuento en todas tus compras',
+      'Promociones permanentes exclusivas para miembros VIP',
+      '$75 en puntos Club cada mes',
+      'Acceso anticipado a nuevos servicios y productos',
+      'Comparte tus puntos entre todas las marcas de The Clean Club',
+      'Atención prioritaria',
     ],
   },
 };
@@ -103,7 +102,7 @@ export default function Membresia() {
         text={
           founders
             ? 'Precio especial para los primeros miembros de The Clean Club. Conservas esta tarifa mientras tu membresía siga activa.'
-            : 'Transporte incluido, descuento en todo el catálogo y prioridad de horarios. Cancela cuando quieras.'
+            : 'Descuento en todas tus compras, promociones exclusivas y acceso anticipado a lo nuevo. Cancela cuando quieras.'
         }
         maxWidth={600}
       />
