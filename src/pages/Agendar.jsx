@@ -64,18 +64,6 @@ function formatHoraRange({ start, end }) {
   return `${formatHour12(start)}-${formatHour12(end)}`;
 }
 
-// Uber Direct's 1h windows only ever span a single 10am-9pm stretch (never
-// wrapping past noon twice), so the hour alone is unambiguous without
-// am/pm — e.g. "10-11", "8-9". See VENTANA_UD_RE in laundry-os/api/agendar.js
-// and src/App.jsx, which mirror this format.
-function formatHourOnly(hour) {
-  return hour % 12 === 0 ? 12 : hour % 12;
-}
-
-function formatHourOnlyRange({ start, end }) {
-  return `${formatHourOnly(start)}-${formatHourOnly(end)}`;
-}
-
 // Local-time YYYY-MM-DD (not toISOString(), which converts to UTC and can
 // shift the date depending on the visitor's timezone).
 function toISODate(date) {
@@ -90,10 +78,8 @@ function toISODate(date) {
 // filters today's remaining options.
 function horasFor(date, weekdayIndex, zona) {
   let ranges;
-  let formatRange = formatHoraRange;
   if (EXTERNAL_ZONES.includes(zona)) {
     ranges = EXTERNAL_DAYS.includes(weekdayIndex) ? EXTERNAL_RANGES : [];
-    formatRange = formatHourOnlyRange;
   } else {
     const schedule = ZONE_SCHEDULES[zona];
     if (!schedule) return [];
@@ -108,7 +94,7 @@ function horasFor(date, weekdayIndex, zona) {
       slotStart.setHours(range.start, 0, 0, 0);
       return slotStart >= cutoff;
     })
-    .map((range) => ({ ...range, label: formatRange(range) }));
+    .map((range) => ({ ...range, label: formatHoraRange(range) }));
 }
 
 // Zone-less (zona === null, e.g. coverage not resolved yet) yields no days.
