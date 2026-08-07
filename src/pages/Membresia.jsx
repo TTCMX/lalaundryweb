@@ -82,12 +82,16 @@ export default function Membresia() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: elegido, nombre, tel: telefono, email: email || undefined }),
       });
-      const data = res.ok ? await res.json() : null;
+      const data = await res.json().catch(() => null);
       if (data?.init_point) {
         window.location.href = data.init_point;
         return;
       }
-      setError('No pudimos iniciar tu membresía. Intenta de nuevo o escríbenos por WhatsApp.');
+      setError(
+        data?.detalle
+          ? `No pudimos iniciar tu membresía (${data.detalle}). Intenta de nuevo o escríbenos por WhatsApp.`
+          : 'No pudimos iniciar tu membresía. Intenta de nuevo o escríbenos por WhatsApp.'
+      );
     } catch {
       setError('No pudimos conectarnos. Revisa tu conexión e intenta de nuevo.');
     }
