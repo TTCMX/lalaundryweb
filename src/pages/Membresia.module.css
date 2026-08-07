@@ -1,0 +1,259 @@
+.section {
+  padding: 0 48px 60px;
+  max-width: 960px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+  margin: 0 auto 28px;
+}
+
+.toggleBtn {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 22px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.toggleActivo {
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  font-weight: 700;
+}
+
+.planes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.plan {
+  position: relative;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  padding: 30px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.planDestacado {
+  border: 2px solid var(--color-orange);
+}
+
+.cinta {
+  position: absolute;
+  top: -11px;
+  left: 28px;
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.planNombre {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--color-navy);
+  margin: 0 0 6px;
+}
+
+.planResumen {
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+.precioFila {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.precio {
+  font-family: var(--font-display);
+  font-size: 40px;
+  color: var(--color-navy);
+  line-height: 1;
+}
+
+.periodo {
+  font-size: 15px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.prueba,
+.ahorro {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  width: fit-content;
+}
+
+.prueba {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.ahorro {
+  background: var(--color-badge-bg);
+  color: var(--color-badge-text);
+}
+
+.beneficios {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  flex: 1;
+}
+
+.beneficio {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-text);
+}
+
+.check {
+  flex-shrink: 0;
+  width: 19px;
+  height: 19px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--color-success-icon-bg);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cta {
+  width: 100%;
+  border: 2px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-navy);
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ctaDestacado {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+  color: var(--color-orange-on);
+}
+
+.form {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  padding: 30px 32px;
+  max-width: 480px;
+  margin: 28px auto 0;
+}
+
+.formTitulo {
+  font-family: var(--font-display);
+  font-size: 21px;
+  color: var(--color-navy);
+  margin: 0 0 6px;
+}
+
+.formTexto {
+  font-size: 13.5px;
+  color: var(--color-text-muted);
+  margin: 0 0 22px;
+  line-height: 1.5;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.error {
+  color: oklch(0.5 0.18 25);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.submit {
+  width: 100%;
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.legal {
+  font-size: 11.5px;
+  color: var(--color-text-muted-2);
+  line-height: 1.5;
+  margin: 14px 0 0;
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding: 0 20px 40px;
+  }
+  .plan {
+    padding: 26px 22px;
+  }
+  .precio {
+    font-size: 34px;
+  }
+  .form {
+    padding: 24px 20px;
+  }
+}
