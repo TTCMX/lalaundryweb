@@ -20,18 +20,18 @@ const ZONE_SCHEDULES = {
   E: { daytime: [], evening: [1, 4] },
 };
 // Serviced via Uber Direct instead of our own fleet: domingo-jueves only,
-// in 30-minute "preferred" windows (not a hard guarantee like the other
+// in 1-hour "preferred" windows (not a hard guarantee like the other
 // zones) — Uber Direct confirms the exact time over WhatsApp.
 const EXTERNAL_ZONES = ['F', 'G'];
 const EXTERNAL_DAYS = [0, 1, 2, 3, 4]; // domingo-jueves
-function buildHalfHourRanges(startHour, endHour) {
+function buildHourRanges(startHour, endHour) {
   const ranges = [];
-  for (let h = startHour; h < endHour; h += 0.5) {
-    ranges.push({ start: h, end: h + 0.5 });
+  for (let h = startHour; h < endHour; h += 1) {
+    ranges.push({ start: h, end: h + 1 });
   }
   return ranges;
 }
-const EXTERNAL_RANGES = buildHalfHourRanges(10, 21); // 10am a 9pm
+const EXTERNAL_RANGES = buildHourRanges(10, 21); // 10am a 9pm
 const UBER_DIRECT_MESSAGE =
   '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
   'proveedor externo (Uber Direct). El transporte es gratis en pedidos de $1,000 o más; en ' +
@@ -64,18 +64,16 @@ function formatHoraRange({ start, end }) {
   return `${formatHour12(start)}-${formatHour12(end)}`;
 }
 
-// Uber Direct's 30-min windows only ever span a single 10am-9pm stretch
-// (never wrapping past noon twice), so the hour alone is unambiguous
-// without am/pm — e.g. "10-10:30", "8:30-9". See VENTANA_UD_RE in
-// laundry-os/api/agendar.js and src/App.jsx, which mirror this format.
-function formatHalfHour(hour) {
-  const wholeHour = Math.floor(hour);
-  const hour12 = wholeHour % 12 === 0 ? 12 : wholeHour % 12;
-  return hour % 1 === 0.5 ? `${hour12}:30` : `${hour12}`;
+// Uber Direct's 1h windows only ever span a single 10am-9pm stretch (never
+// wrapping past noon twice), so the hour alone is unambiguous without
+// am/pm — e.g. "10-11", "8-9". See VENTANA_UD_RE in laundry-os/api/agendar.js
+// and src/App.jsx, which mirror this format.
+function formatHourOnly(hour) {
+  return hour % 12 === 0 ? 12 : hour % 12;
 }
 
-function formatHalfHourRange({ start, end }) {
-  return `${formatHalfHour(start)}-${formatHalfHour(end)}`;
+function formatHourOnlyRange({ start, end }) {
+  return `${formatHourOnly(start)}-${formatHourOnly(end)}`;
 }
 
 // Local-time YYYY-MM-DD (not toISOString(), which converts to UTC and can
@@ -95,7 +93,7 @@ function horasFor(date, weekdayIndex, zona) {
   let formatRange = formatHoraRange;
   if (EXTERNAL_ZONES.includes(zona)) {
     ranges = EXTERNAL_DAYS.includes(weekdayIndex) ? EXTERNAL_RANGES : [];
-    formatRange = formatHalfHourRange;
+    formatRange = formatHourOnlyRange;
   } else {
     const schedule = ZONE_SCHEDULES[zona];
     if (!schedule) return [];
@@ -107,7 +105,7 @@ function horasFor(date, weekdayIndex, zona) {
   return ranges
     .filter((range) => {
       const slotStart = new Date(date);
-      slotStart.setHours(Math.floor(range.start), (range.start % 1) * 60, 0, 0);
+      slotStart.setHours(range.start, 0, 0, 0);
       return slotStart >= cutoff;
     })
     .map((range) => ({ ...range, label: formatRange(range) }));
