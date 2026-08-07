@@ -676,7 +676,7 @@ export default function Agendar() {
                   por WhatsApp.
                 </p>
               )}
-              <div className={styles.horasGrid} style={{ gridTemplateColumns: `repeat(${HORAS.length}, 1fr)` }}>
+              <div className={styles.horasGrid}>
                 {HORAS.map((hora, i) => {
                   const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
                   const isFull = count >= slotMax;

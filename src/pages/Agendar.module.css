@@ -158,8 +158,13 @@
 
 .horasGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: 8px;
+}
+
+.horasGrid .choiceButton {
+  padding: 10px 4px;
+  font-size: 12px;
 }
 
 .choiceButton {
@@ -395,5 +400,13 @@
   }
   .navRowActions {
     flex-wrap: wrap;
+  }
+  .horasGrid {
+    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+    gap: 6px;
+  }
+  .horasGrid .choiceButton {
+    padding: 8px 2px;
+    font-size: 11px;
   }
 }
