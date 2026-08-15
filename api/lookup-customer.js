@@ -27,16 +27,25 @@ export default async function handler(req, res) {
     // between visits (spaces, dashes, +52) and older/imported rows aren't
     // guaranteed to already be in the normalized format.
     const target = normalizePhone(telefono);
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('nombre, telefono, direccion, cp, email, place_id, lat, lng')
-      .in('pago_status', REAL_STATUSES)
-      .not('direccion', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(3000);
-    if (error) throw error;
-
-    const match = data?.find((row) => normalizePhone(row.telefono) === target);
+    // Por páginas: Supabase corta toda consulta en 1000 filas aunque se pida
+    // más (el .limit(3000) anterior devolvía 1000 en silencio), y las filas
+    // de bookings crecen rápido porque cada lead abandonado también es una.
+    // Se deja de pedir en cuanto aparece el match — el order por created_at
+    // hace que las reservas recientes salgan en las primeras páginas.
+    const PAGINA = 1000;
+    let match = null;
+    for (let desde = 0; !match; desde += PAGINA) {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('nombre, telefono, direccion, cp, email, place_id, lat, lng')
+        .in('pago_status', REAL_STATUSES)
+        .not('direccion', 'is', null)
+        .order('created_at', { ascending: false })
+        .range(desde, desde + PAGINA - 1);
+      if (error) throw error;
+      match = data?.find((row) => normalizePhone(row.telefono) === target) || null;
+      if (!data || data.length < PAGINA) break;
+    }
     if (!match) {
       res.status(200).json({ found: false });
       return;
