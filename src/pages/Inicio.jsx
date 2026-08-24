@@ -13,16 +13,16 @@ const DATOS = [
   { valor: '100%', label: 'a domicilio, sin filas' },
 ];
 
-// Promos exclusivas de la membresía VIP. El precio regular es el del
-// catálogo ($150 por par de tenis, $40 el kilo de ropa), y el de 5 pares
-// convive con la tabla escalonada de abajo: ahí son $550 para todo público
-// y $500 solo para miembros VIP.
-const PROMOS_VIP = [
+// Promos de membresía. El precio regular es el del catálogo ($150 por par de
+// tenis, $40 el kilo de ropa), y el de 5 pares convive con la tabla
+// escalonada de abajo: ahí son $550 para todo público y $500 para VIP.
+const PROMOS_MEMBRESIA = [
   {
     titulo: '5 pares de tenis',
     desc: 'Lava cinco pares en una misma recolección con precio de miembro.',
     precio: '$500',
     regular: '$750',
+    soloVip: true,
   },
   {
     titulo: 'Lavado de ropa por kilo',
@@ -30,6 +30,13 @@ const PROMOS_VIP = [
     precio: '$35',
     unidad: '/kg',
     regular: '$40',
+    soloVip: true,
+  },
+  {
+    titulo: 'Limpieza en tu hogar',
+    desc: 'Salas, tapetes y colchones, con la limpieza hecha en tu domicilio.',
+    precio: '20%',
+    nota: 'de descuento sobre el catálogo',
   },
 ];
 
@@ -81,11 +88,13 @@ export default function Inicio() {
       {/* Academy oculta temporalmente — se retoma más adelante. */}
 
       <section className={styles.promos} style={{ paddingBottom: 0 }}>
-        <h2 className={styles.stepsTitle}>Exclusivo para miembros VIP</h2>
+        <h2 className={styles.stepsTitle}>Exclusivo para miembros</h2>
         <div className={styles.vipGrid}>
-          {PROMOS_VIP.map((promo) => (
+          {PROMOS_MEMBRESIA.map((promo) => (
             <div className={styles.vipCard} key={promo.titulo}>
-              <span className={styles.vipBadge}>★ Solo VIP</span>
+              <span className={styles.vipBadge}>
+                ★ {promo.soloVip ? 'Solo VIP' : 'Miembros + y VIP'}
+              </span>
               <h3 className={styles.promoTitle}>{promo.titulo}</h3>
               <p className={styles.promoDesc}>{promo.desc}</p>
               <div className={styles.vipPrecios}>
@@ -94,14 +103,16 @@ export default function Inicio() {
                   {promo.unidad && <span className={styles.vipUnidad}>{promo.unidad}</span>}
                 </span>
                 <span className={styles.vipRegular}>
-                  antes <s>{promo.regular}{promo.unidad || ''}</s>
+                  {promo.regular
+                    ? <>antes <s>{promo.regular}{promo.unidad || ''}</s></>
+                    : promo.nota}
                 </span>
               </div>
             </div>
           ))}
         </div>
         <p className={styles.vipPie}>
-          Estos precios son parte de la membresía The Clean Club VIP.{' '}
+          Estos precios son parte de la membresía The Clean Club.{' '}
           <Link to="/membresia" className={styles.vipLink}>Ver la membresía →</Link>
         </p>
       </section>
