@@ -170,6 +170,75 @@
   text-decoration: none;
 }
 
+/* Promos de membresía: se distinguen de las promos abiertas con el morado
+   de la marca, para que se lea de inmediato que son un beneficio VIP. */
+.vipGrid {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.vipCard {
+  background: var(--color-card);
+  border: 2px solid #a99bd6;
+  border-radius: 16px;
+  padding: 28px 32px;
+}
+
+.vipBadge {
+  display: inline-block;
+  background: #ece6f8;
+  color: #5b4fa0;
+  border: 1px solid #a99bd6;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+
+.vipPrecios {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vipPrecio {
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1;
+  color: #5b4fa0;
+}
+
+.vipUnidad {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.vipRegular {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.vipPie {
+  max-width: 1100px;
+  margin: 20px auto 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.vipLink {
+  color: var(--color-orange);
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .promos {
   padding: 64px 48px;
 }

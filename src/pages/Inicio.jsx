@@ -13,6 +13,26 @@ const DATOS = [
   { valor: '100%', label: 'a domicilio, sin filas' },
 ];
 
+// Promos exclusivas de la membresía VIP. El precio regular es el del
+// catálogo ($150 por par de tenis, $40 el kilo de ropa), y el de 5 pares
+// convive con la tabla escalonada de abajo: ahí son $550 para todo público
+// y $500 solo para miembros VIP.
+const PROMOS_VIP = [
+  {
+    titulo: '5 pares de tenis',
+    desc: 'Lava cinco pares en una misma recolección con precio de miembro.',
+    precio: '$500',
+    regular: '$750',
+  },
+  {
+    titulo: 'Lavado de ropa por kilo',
+    desc: 'Tu ropa y ropa de cama, con tarifa preferente en cada recolección.',
+    precio: '$35',
+    unidad: '/kg',
+    regular: '$40',
+  },
+];
+
 const PROMO_TENIS = [
   { pares: '1', precio: '$150', transporte: '$100' },
   { pares: '2', precio: '$280', transporte: '$20' },
@@ -59,6 +79,32 @@ export default function Inicio() {
       </section>
 
       {/* Academy oculta temporalmente — se retoma más adelante. */}
+
+      <section className={styles.promos} style={{ paddingBottom: 0 }}>
+        <h2 className={styles.stepsTitle}>Exclusivo para miembros VIP</h2>
+        <div className={styles.vipGrid}>
+          {PROMOS_VIP.map((promo) => (
+            <div className={styles.vipCard} key={promo.titulo}>
+              <span className={styles.vipBadge}>★ Solo VIP</span>
+              <h3 className={styles.promoTitle}>{promo.titulo}</h3>
+              <p className={styles.promoDesc}>{promo.desc}</p>
+              <div className={styles.vipPrecios}>
+                <span className={styles.vipPrecio}>
+                  {promo.precio}
+                  {promo.unidad && <span className={styles.vipUnidad}>{promo.unidad}</span>}
+                </span>
+                <span className={styles.vipRegular}>
+                  antes <s>{promo.regular}{promo.unidad || ''}</s>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className={styles.vipPie}>
+          Estos precios son parte de la membresía The Clean Club VIP.{' '}
+          <Link to="/membresia" className={styles.vipLink}>Ver la membresía →</Link>
+        </p>
+      </section>
 
       <section className={styles.promos}>
         <h2 className={styles.stepsTitle}>Promociones activas</h2>
