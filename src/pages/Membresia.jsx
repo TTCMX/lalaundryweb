@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PageHero from '../components/PageHero.jsx';
 import { CheckIcon } from '../components/Icon.jsx';
@@ -64,6 +64,14 @@ export default function Membresia() {
   const [email, setEmail] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  const formRef = useRef(null);
+
+  // El formulario vive debajo de las tarjetas; en móvil (tarjetas apiladas)
+  // elegir el plan de arriba lo dejaba fuera de pantalla y parecía que el
+  // botón no hacía nada. Al elegir, la página baja sola hasta él.
+  useEffect(() => {
+    if (elegido) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [elegido]);
 
   const nivelesVisibles = Object.entries(NIVELES).filter(
     ([nivel]) => PRECIOS[slugDe(nivel, periodo, founders)]
@@ -188,7 +196,7 @@ export default function Membresia() {
         </div>
 
         {elegido && (
-          <div className={styles.form}>
+          <div className={styles.form} ref={formRef} style={{ scrollMarginTop: 16 }}>
             <h3 className={styles.formTitulo}>Últimos datos</h3>
             <p className={styles.formTexto}>
               Usamos tu WhatsApp para ligar la membresía a tu cuenta — es el mismo número con el
