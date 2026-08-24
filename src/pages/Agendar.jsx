@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PlaceholderImage from '../components/PlaceholderImage.jsx';
 import { CheckIcon, XIcon } from '../components/Icon.jsx';
+import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 
@@ -787,6 +788,7 @@ export default function Agendar() {
                   <span className={styles.resumenValue}>Pago a la entrega</span>
                 </div>
               </div>
+              <InvitacionMembresia telefono={telefono} />
               <Link to="/" className={styles.volverLink}>
                 Volver al inicio →
               </Link>

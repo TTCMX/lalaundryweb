@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckIcon, XIcon } from '../components/Icon.jsx';
+import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import styles from './AgendarConfirmacion.module.css';
 import agendarStyles from './Agendar.module.css';
 
@@ -109,6 +110,9 @@ export default function AgendarConfirmacion() {
               </div>
               {booking.pago_status === 'pendiente' && (
                 <p className={styles.pendingNote}>Esto puede tardar unos segundos…</p>
+              )}
+              {booking.pago_status !== 'rechazado' && (
+                <InvitacionMembresia telefono={booking.telefono} />
               )}
               <Link to="/" className={agendarStyles.volverLink}>
                 Volver al inicio →
