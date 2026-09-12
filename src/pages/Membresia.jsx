@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import PageHero from '../components/PageHero.jsx';
 import { CheckIcon } from '../components/Icon.jsx';
 import styles from './Membresia.module.css';
@@ -40,23 +39,17 @@ const PRECIOS = {
   'plus-anio': { precio: 499 },
   'vip-mes': { precio: 149, prueba: true },
   'vip-anio': { precio: 1199 },
-  'plus-mes-founders': { precio: 39, prueba: true },
-  'vip-mes-founders': { precio: 109, prueba: true },
-  'vip-anio-founders': { precio: 999 },
-  // "plus-anio-founders" no existe a propósito: ese plan no se ofrece.
 };
 
-const slugDe = (nivel, periodo, founders) =>
-  `${nivel}-${periodo}${founders ? '-founders' : ''}`;
+// Los planes Founders ya no se ofrecen: se quitó el ?founders=1 con el que
+// se llegaba a ellos. Siguen vivos en MercadoPago y en lib/planes.js de la
+// app, porque quien ya está suscrito conserva su tarifa y sus beneficios —
+// aquí solo se cerró la puerta para nuevos.
+const slugDe = (nivel, periodo) => `${nivel}-${periodo}`;
 
 const fmt = (n) => `$${n.toLocaleString('es-MX')}`;
 
 export default function Membresia() {
-  const [params] = useSearchParams();
-  // Los planes Founders tienen precio especial y no se anuncian: se llega a
-  // ellos solo con el link directo /membresia?founders=1.
-  const founders = params.get('founders') === '1';
-
   const [periodo, setPeriodo] = useState('mes');
   const [elegido, setElegido] = useState(null); // slug del plan
   const [nombre, setNombre] = useState('');
@@ -74,7 +67,7 @@ export default function Membresia() {
   }, [elegido]);
 
   const nivelesVisibles = Object.entries(NIVELES).filter(
-    ([nivel]) => PRECIOS[slugDe(nivel, periodo, founders)]
+    ([nivel]) => PRECIOS[slugDe(nivel, periodo)]
   );
 
   const suscribir = async () => {
@@ -115,13 +108,9 @@ export default function Membresia() {
   return (
     <>
       <PageHero
-        badge={founders ? 'Membresía Founders' : 'Membresía'}
-        title={founders ? 'Precio de fundador' : 'Lava sin pensarlo'}
-        text={
-          founders
-            ? 'Precio especial para los primeros miembros de The Clean Club. Conservas esta tarifa mientras tu membresía siga activa.'
-            : 'Descuento en todas tus compras, promociones exclusivas y acceso anticipado a lo nuevo. Cancela cuando quieras.'
-        }
+        badge="Membresía"
+        title="Lava sin pensarlo"
+        text="Descuento en todas tus compras, promociones exclusivas y acceso anticipado a lo nuevo. Cancela cuando quieras."
         maxWidth={600}
       />
 
@@ -146,9 +135,9 @@ export default function Membresia() {
 
         <div className={styles.planes}>
           {nivelesVisibles.map(([nivel, info]) => {
-            const slug = slugDe(nivel, periodo, founders);
+            const slug = slugDe(nivel, periodo);
             const precio = PRECIOS[slug];
-            const mensualDelMismoNivel = PRECIOS[slugDe(nivel, 'mes', founders)];
+            const mensualDelMismoNivel = PRECIOS[slugDe(nivel, 'mes')];
             const ahorro =
               periodo === 'anio' && mensualDelMismoNivel
                 ? mensualDelMismoNivel.precio * 12 - precio.precio
