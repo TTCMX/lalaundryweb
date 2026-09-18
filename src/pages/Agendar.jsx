@@ -138,7 +138,7 @@ export default function Agendar() {
   const [email, setEmail] = useState('');
   const [direccion, setDireccion] = useState('');
   const [cp, setCp] = useState('');
-  const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered | externo
+  const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered | externo | error
   const [zona, setZona] = useState(null); // A-E once cobertura === 'covered'
   const [place, setPlace] = useState(null); // { lat, lng, placeId } once chosen from Maps suggestions
   const [nombre, setNombre] = useState('');
@@ -209,7 +209,16 @@ export default function Agendar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cp: candidateCp.trim(), ...extra }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      // Un fallo del servidor NO es falta de cobertura. Se veían igual, así
+      // que cualquier caída de la base le decía al cliente que no llegamos a
+      // su zona y lo sacaba del embudo sin dejar rastro de por qué.
+      if (!res.ok || data.error) {
+        console.error('[agendar] no se pudo validar cobertura:', data.error || res.status, data.detalle || '');
+        setCobertura('error');
+        setZona(null);
+        return null;
+      }
       if (data.externo) {
         // Known zone, but served via Uber Direct instead of our own
         // scheduler for now — can't proceed to Horario from here.
@@ -221,8 +230,10 @@ export default function Agendar() {
       const resolvedZona = data.covered ? data.zona || null : null;
       setZona(resolvedZona);
       return resolvedZona;
-    } catch {
-      setCobertura('not-covered');
+    } catch (err) {
+      // Sin red tampoco sabemos si hay cobertura: no se le puede decir que no.
+      console.error('[agendar] no se pudo validar cobertura:', err);
+      setCobertura('error');
       setZona(null);
       return null;
     }
@@ -597,6 +608,24 @@ export default function Agendar() {
                 (cobertura === 'covered' && EXTERNAL_ZONES.includes(zona))) && (
                 <div className={styles.avisoBanner}>
                   <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
+                </div>
+              )}
+              {cobertura === 'error' && (
+                <div className={cx(styles.successBanner, styles.errorBanner)}>
+                  <span className={cx(styles.successIcon, styles.errorIcon)}>
+                    <XIcon />
+                  </span>
+                  <span className={cx(styles.successText, styles.errorText)}>
+                    No pudimos validar tu dirección en este momento.{' '}
+                    <button
+                      type="button"
+                      onClick={() => checkCoverageFor(cp, { direccion, placeId: place?.placeId, lat: place?.lat, lng: place?.lng })}
+                      style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      Reintentar
+                    </button>
+                    , o escríbenos por WhatsApp al 56 4419 8713 y te agendamos nosotros.
+                  </span>
                 </div>
               )}
               {cobertura === 'not-covered' && (
