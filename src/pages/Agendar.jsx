@@ -146,6 +146,10 @@ export default function Agendar() {
   // quedaba atorado en este paso: el botón "Continuar" exige cobertura
   // confirmada y la cobertura sólo se podía confirmar con una sugerencia.
   const [mapsOk, setMapsOk] = useState(() => !googleMapsAuthFailed());
+  // Salida manual que no depende de detectar la falla. Si Google cambia cómo
+  // avisa, o la dirección simplemente no está en su catálogo, el cliente
+  // siempre puede capturar su código postal a mano y seguir.
+  const [cpManual, setCpManual] = useState(false);
   const [nombre, setNombre] = useState('');
   const DIAS = useMemo(() => buildDiaOptions(zona), [zona]);
   const [diaSel, setDiaSel] = useState(0);
@@ -585,10 +589,17 @@ export default function Agendar() {
                     : 'Calle, número, colonia y ciudad'
                 }
               />
-              {mapsOk ? (
+              {mapsOk && !cpManual ? (
                 <>
                   <p className={styles.hint}>
-                    La ubicación también se confirma sobre un mapa antes de agendar.
+                    La ubicación también se confirma sobre un mapa antes de agendar.{' '}
+                    <button
+                      type="button"
+                      onClick={() => setCpManual(true)}
+                      style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      ¿No aparece tu dirección?
+                    </button>
                   </p>
                   {place ? (
                     <div
@@ -608,8 +619,9 @@ export default function Agendar() {
               ) : (
                 <>
                   <p className={styles.hint}>
-                    Las sugerencias de dirección no están disponibles ahora mismo. Escribe tu
-                    dirección completa y tu código postal y seguimos igual.
+                    {mapsOk
+                      ? 'Escribe tu dirección completa y tu código postal y seguimos igual.'
+                      : 'Las sugerencias de dirección no están disponibles ahora mismo. Escribe tu dirección completa y tu código postal y seguimos igual.'}
                   </p>
                   <label className={styles.label}>Código postal</label>
                   <input
