@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import PlaceholderImage from '../components/PlaceholderImage.jsx';
 import { CheckIcon, XIcon } from '../components/Icon.jsx';
 import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
-import { loadGoogleMaps } from '../lib/googleMaps.js';
+import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 
 const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Pago', 'Listo'];
@@ -141,6 +141,11 @@ export default function Agendar() {
   const [cobertura, setCobertura] = useState('idle'); // idle | checking | covered | not-covered | externo | error
   const [zona, setZona] = useState(null); // A-E once cobertura === 'covered'
   const [place, setPlace] = useState(null); // { lat, lng, placeId } once chosen from Maps suggestions
+  // Cuando Maps no sirve (llave rechazada, facturación caída, script bloqueado)
+  // no hay sugerencias ni código postal automático. Sin esto el cliente se
+  // quedaba atorado en este paso: el botón "Continuar" exige cobertura
+  // confirmada y la cobertura sólo se podía confirmar con una sugerencia.
+  const [mapsOk, setMapsOk] = useState(() => !googleMapsAuthFailed());
   const [nombre, setNombre] = useState('');
   const DIAS = useMemo(() => buildDiaOptions(zona), [zona]);
   const [diaSel, setDiaSel] = useState(0);
@@ -247,7 +252,12 @@ export default function Agendar() {
     if (match) {
       setCp(match[0]);
       checkCoverageFor(match[0], { direccion });
+      return;
     }
+    // Sin Maps el código postal se captura aparte, y editar la dirección borra
+    // la cobertura ya validada. Se revalida con el CP que ya tenemos para que
+    // corregir una letra de la calle no obligue a reescribirlo.
+    if (cp.length === 5) checkCoverageFor(cp, { direccion });
   };
 
   // Attach Google Places Autocomplete to the address input so customers pick
@@ -259,6 +269,9 @@ export default function Agendar() {
     if (step !== 1 || !direccionInputRef.current) return;
     let autocomplete;
     let listener;
+    // Google sólo rechaza la llave cuando el autocompletado pide datos, o sea
+    // después de que esto resolvió bien. Hay que escucharlo aparte del .catch.
+    const dejarDeEscuchar = onGoogleMapsAuthFailure(() => setMapsOk(false));
     loadGoogleMaps()
       .then((google) => {
         if (!direccionInputRef.current) return;
@@ -290,9 +303,13 @@ export default function Agendar() {
           }
         });
       })
-      .catch((err) => console.warn('[agendar] Google Maps unavailable, falling back to free text:', err));
+      .catch((err) => {
+        console.warn('[agendar] Google Maps unavailable, falling back to free text:', err);
+        setMapsOk(false);
+      });
 
     return () => {
+      dejarDeEscuchar();
       if (listener) listener.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -562,24 +579,55 @@ export default function Agendar() {
                   setZona(null);
                 }}
                 onBlur={handleDireccionBlur}
-                placeholder="Empieza a escribir tu calle y elige una sugerencia"
+                placeholder={
+                  mapsOk
+                    ? 'Empieza a escribir tu calle y elige una sugerencia'
+                    : 'Calle, número, colonia y ciudad'
+                }
               />
-              <p className={styles.hint}>
-                La ubicación también se confirma sobre un mapa antes de agendar.
-              </p>
-              {place ? (
-                <div
-                  ref={mapRef}
-                  style={{ aspectRatio: '16/6', borderRadius: 12, marginBottom: 18 }}
-                />
+              {mapsOk ? (
+                <>
+                  <p className={styles.hint}>
+                    La ubicación también se confirma sobre un mapa antes de agendar.
+                  </p>
+                  {place ? (
+                    <div
+                      ref={mapRef}
+                      style={{ aspectRatio: '16/6', borderRadius: 12, marginBottom: 18 }}
+                    />
+                  ) : (
+                    <PlaceholderImage
+                      label="Elige una dirección sugerida arriba para ver el mapa"
+                      aspectRatio="16/6"
+                      borderRadius={12}
+                      fontSize={12}
+                      style={{ marginBottom: 18 }}
+                    />
+                  )}
+                </>
               ) : (
-                <PlaceholderImage
-                  label="Elige una dirección sugerida arriba para ver el mapa"
-                  aspectRatio="16/6"
-                  borderRadius={12}
-                  fontSize={12}
-                  style={{ marginBottom: 18 }}
-                />
+                <>
+                  <p className={styles.hint}>
+                    Las sugerencias de dirección no están disponibles ahora mismo. Escribe tu
+                    dirección completa y tu código postal y seguimos igual.
+                  </p>
+                  <label className={styles.label}>Código postal</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    className={styles.input}
+                    value={cp}
+                    onChange={(e) => {
+                      const limpio = e.target.value.replace(/\D/g, '').slice(0, 5);
+                      setCp(limpio);
+                      setCobertura('idle');
+                      setZona(null);
+                      if (limpio.length === 5) checkCoverageFor(limpio, { direccion });
+                    }}
+                    placeholder="Ej. 89000"
+                  />
+                </>
               )}
               {cobertura === 'checking' && (
                 <p className={styles.hint}>Verificando cobertura…</p>
