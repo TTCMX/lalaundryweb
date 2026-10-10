@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { getMaxBookingsPerSlot } from '../server/capacity.js';
+import { rechazar } from '../server/cors.js';
 
 const ACTIVE_STATUSES = ['pendiente', 'pagado', 'pago_entrega'];
 
@@ -7,10 +8,7 @@ const ACTIVE_STATUSES = ['pendiente', 'pagado', 'pago_entrega'];
 // instead of letting the customer fill out the whole form and only find
 // out it's full when they try to confirm.
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+  if (rechazar(req, res)) return;
 
   const { diaLabels } = req.body || {};
   if (!Array.isArray(diaLabels) || !diaLabels.length) {

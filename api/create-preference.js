@@ -2,16 +2,14 @@ import { getSupabaseClient } from '../server/supabaseClient.js';
 import { createPreference, getDepositAmount } from '../server/mercadopago.js';
 import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
 import { normalizePhone } from '../server/phone.js';
+import { rechazar } from '../server/cors.js';
 
 // Used for the "pagar en línea" path — creates the booking as pendiente,
 // then a MercadoPago Checkout Pro preference for the deposit. The client
 // redirects the browser to the returned init_point; the webhook is the
 // source of truth for marking the booking as paid.
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+  if (rechazar(req, res)) return;
 
   const {
     bookingId,

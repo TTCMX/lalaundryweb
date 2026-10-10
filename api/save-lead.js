@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { normalizePhone } from '../server/phone.js';
+import { rechazar } from '../server/cors.js';
 
 // Called opportunistically as the customer moves through the Agendar steps
 // (see src/pages/Agendar.jsx), well before they reach "Confirmar agenda".
@@ -22,10 +23,7 @@ const FIELD_TO_COLUMN = {
 };
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+  if (rechazar(req, res)) return;
 
   const { bookingId, ...fields } = req.body || {};
 

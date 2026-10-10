@@ -1,10 +1,8 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
+import { rechazar } from '../server/cors.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+  if (rechazar(req, res)) return;
 
   const { cp, direccion, placeId, lat, lng } = req.body || {};
   if (!cp || typeof cp !== 'string') {

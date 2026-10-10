@@ -3,14 +3,12 @@ import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../s
 import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
 import { notifyOpsApp } from '../server/opsApp.js';
 import { normalizePhone } from '../server/phone.js';
+import { rechazar } from '../server/cors.js';
 
 // Used for the "pagar a la entrega" path — no online charge, so we can
 // confirm the booking immediately instead of waiting on a payment webhook.
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
+  if (rechazar(req, res)) return;
 
   const {
     bookingId,

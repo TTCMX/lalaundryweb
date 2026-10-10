@@ -9,9 +9,19 @@ export async function notifyOpsApp(booking) {
   const url = process.env.OPS_AGENDAR_URL || DEFAULT_OPS_AGENDAR_URL;
 
   try {
+    // Secreto compartido con la app de operaciones. Es una llamada de
+    // servidor a servidor, así que no lleva Origin y el endpoint de allá no
+    // puede identificarnos de otro modo. Mientras la variable no esté puesta
+    // en los dos proyectos no se manda nada y el endpoint sigue abierto,
+    // igual que antes; en cuanto se configura en ambos, queda cerrado.
+    const secreto = process.env.OPS_AGENDAR_SECRET;
+
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(secreto ? { Authorization: `Bearer ${secreto}` } : {}),
+      },
       body: JSON.stringify({
         nombre: booking.nombre,
         tel: booking.telefono,
