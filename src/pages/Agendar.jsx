@@ -6,7 +6,7 @@ import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 
-const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Pago', 'Listo'];
+const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Listo'];
 const LAST_STEP = STEP_LABELS.length - 1;
 const DIAS_HORIZON = 6;
 const MIN_LEAD_HOURS = 2;
@@ -41,13 +41,8 @@ const SIN_TINTORERIA_MESSAGE =
 const UBER_DIRECT_MESSAGE =
   '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
   'proveedor externo (Uber Direct). El transporte es gratis en pedidos de $1,000 o más; en ' +
-  'pedidos menores, el transporte cuesta $250. El anticipo que pagues se descuenta del total ' +
-  'de tu pedido.';
-// Zones where "pagar a la entrega" is offered; every other zone (E, F, G)
-// only gets "pagar anticipo en línea".
-const ENTREGA_ZONES = ['A', 'B', 'C', 'D'];
+  'pedidos menores, el transporte cuesta $250.';
 const NEXT_LABELS = [
-  'Continuar',
   'Continuar',
   'Continuar',
   'Continuar',
@@ -167,16 +162,6 @@ export default function Agendar() {
     setHoraSel(0);
   }, [zona]);
   const [detalles, setDetalles] = useState('');
-  const [pago, setPago] = useState(null);
-  const entregaAllowed = !!zona && ENTREGA_ZONES.includes(zona);
-  // Zones without "pagar a la entrega" only offer paying online — force it
-  // as soon as the zone is known so neither the Pago step nor the
-  // returning-customer quick-finalize path can slip through with a cash
-  // on delivery booking there.
-  useEffect(() => {
-    if (zona && !entregaAllowed) setPago('linea');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zona]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [slotCounts, setSlotCounts] = useState({});
@@ -456,8 +441,9 @@ export default function Agendar() {
     };
 
     try {
-      const url = pago === 'linea' ? '/api/create-preference' : '/api/create-booking';
-      const res = await fetch(url, {
+      // Ya no se pide anticipo: todo el mundo paga a la entrega, así que la
+      // reserva se confirma aquí mismo sin pasar por MercadoPago.
+      const res = await fetch('/api/create-booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -471,11 +457,6 @@ export default function Agendar() {
       }
       if (!res.ok) throw new Error('finalize-booking-failed');
 
-      const data = await res.json();
-      if (pago === 'linea') {
-        window.location.href = data.init_point;
-        return;
-      }
       setStep(LAST_STEP);
     } catch {
       setSubmitError('No pudimos agendar tu recolección. Intenta de nuevo.');
@@ -498,16 +479,13 @@ export default function Agendar() {
     lookingUp;
   const showNav = step < LAST_STEP;
   const canBack = step > 0;
-  // Skipping Pago only makes sense where "a la entrega" is a real option —
-  // otherwise pago is already forced to 'linea' and there's nothing to skip.
-  const canSkip = step === 4 || (step === 5 && entregaAllowed);
-  const isLastStep = step === 5;
-  // Returning customers skip Detalles/Pago entirely — picking a slot and
-  // confirming finalizes the booking right away (pago a la entrega, unless
-  // their zone forces pago='linea', in which case this redirects to pay).
+  // Detalles es ahora el último paso y es opcional, así que el botón que
+  // confirma ya cubre el "omitir": no queda ningún paso intermedio que saltar.
+  const isLastStep = step === 4;
+  // Returning customers skip Detalles entirely — picking a slot and
+  // confirming finalizes the booking right away.
   const isQuickFinalizeStep = esRecurrente && step === 3;
   const onNext = isLastStep || isQuickFinalizeStep ? finalizarReserva : handleContinue;
-  const onSkip = isLastStep ? finalizarReserva : siguiente;
   const nextLabel = lookingUp
     ? 'Buscando…'
     : submitting
@@ -796,7 +774,7 @@ export default function Agendar() {
               <p className={styles.stepSubtextTight}>
                 Opcional — instrucciones especiales para la recolección o tus prendas.
               </p>
-              <span className={styles.optionalBadge}>Puedes omitir este paso</span>
+              <span className={styles.optionalBadge}>Puedes dejarlo en blanco</span>
               <textarea
                 className={styles.textarea}
                 value={detalles}
@@ -804,47 +782,16 @@ export default function Agendar() {
                 placeholder="Ej. Tocar timbre 2, dejar con el portero, cuidado con botones..."
                 rows={6}
               />
-            </>
-          )}
-
-          {step === 5 && (
-            <>
-              <h2 className={styles.stepHeading}>Pago</h2>
-              <p className={styles.stepSubtextTight}>
-                {entregaAllowed
-                  ? 'Puedes pagar un anticipo en línea o el total a la entrega.'
-                  : 'En tu zona, el anticipo se paga en línea para confirmar tu recolección.'}
+              <p className={styles.hint} style={{ marginBottom: 0 }}>
+                No se cobra nada por adelantado: pagas el total a la entrega, con tarjeta o
+                efectivo.
               </p>
-              {entregaAllowed && (
-                <span className={styles.optionalBadge}>Puedes omitir este paso</span>
-              )}
-              <div className={styles.pagoOptions}>
-                <button
-                  className={cx(styles.pagoOption, pago === 'linea' && styles.pagoOptionSelected)}
-                  onClick={() => setPago('linea')}
-                >
-                  <div className={styles.pagoOptionTitle}>Pagar anticipo en línea</div>
-                  <div className={styles.pagoOptionDesc}>
-                    Te llevamos a MercadoPago para completar el pago de forma segura.
-                  </div>
-                </button>
-                {entregaAllowed && (
-                  <button
-                    className={cx(styles.pagoOption, pago === 'entrega' && styles.pagoOptionSelected)}
-                    onClick={() => setPago('entrega')}
-                  >
-                    <div className={styles.pagoOptionTitle}>Pagar a la entrega</div>
-                    <div className={styles.pagoOptionDesc}>
-                      Con tarjeta o efectivo cuando recibas tu pedido.
-                    </div>
-                  </button>
-                )}
-              </div>
+              {/* El error se muestra aquí porque este paso es el que confirma. */}
               {submitError && <p className={styles.errorMessage}>{submitError}</p>}
             </>
           )}
 
-          {step === 6 && (
+          {step === 5 && (
             <div className={styles.listo}>
               <div className={styles.listoIcon}>
                 <CheckIcon size={28} />
@@ -895,11 +842,6 @@ export default function Agendar() {
               <div />
             )}
             <div className={styles.navRowActions}>
-              {canSkip && (
-                <button className={styles.skipButton} onClick={onSkip} disabled={submitting}>
-                  Omitir
-                </button>
-              )}
               <button
                 className={cx(styles.nextButton, nextDisabled && styles.nextButtonDisabled)}
                 disabled={nextDisabled}
