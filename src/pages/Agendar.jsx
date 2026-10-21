@@ -180,6 +180,9 @@ export default function Agendar() {
     setHoraSel(0);
   }, [zona]);
   const [detalles, setDetalles] = useState('');
+  // Volumen del pedido: decide si Uber Direct manda moto o automóvil. Solo se
+  // pregunta cuando la recolección es con ellos.
+  const [tamano, setTamano] = useState(null); // 'moto' | 'auto'
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [slotCounts, setSlotCounts] = useState({});
@@ -446,7 +449,17 @@ export default function Agendar() {
     // hora_label no es un horario comprometido como en el transporte propio.
     const horaElegida = HORAS[horaSel];
     const detallesFinal = horaElegida && !horaElegida.propio
-      ? [`Transporte por tercero. Horario preferido: ${horaElegida.label}.`, detalles || null]
+      ? [
+          `Transporte por tercero. Horario preferido: ${horaElegida.label}.`,
+          // El vehículo se pide por adelantado: va en las notas para que
+          // quien despacha no tenga que adivinarlo.
+          tamano === 'auto'
+            ? 'Pedido grande: mandar automóvil.'
+            : tamano === 'moto'
+              ? 'Pedido chico: va en moto.'
+              : null,
+          detalles || null,
+        ]
           .filter(Boolean)
           .join(' ')
       : detalles || undefined;
@@ -497,11 +510,16 @@ export default function Agendar() {
   const requiresDireccion = step === 1 && (!direccion || cobertura !== 'covered');
   const requiresNombre = step === 2 && !nombre.trim();
   const requiresHorario = step === 3 && selectedHoraCount >= slotMax;
+  // El vehículo se pide por adelantado, así que sin esta respuesta la
+  // recolección puede llegar en moto a un pedido que no cabe.
+  const preguntarTamano = step === 3 && !!HORAS[horaSel] && !HORAS[horaSel].propio;
+  const requiresTamano = preguntarTamano && !tamano;
   const nextDisabled =
     requiresTelefono ||
     requiresDireccion ||
     requiresNombre ||
     requiresHorario ||
+    requiresTamano ||
     submitting ||
     lookingUp;
   const showNav = step < LAST_STEP;
@@ -803,6 +821,39 @@ export default function Agendar() {
                     ? 'Esta ventana la cubre nuestro propio equipo: llegamos dentro de ese horario.'
                     : 'Este es tu horario preferido — la recolección es con Uber Direct, que confirma la hora exacta por WhatsApp.'}
                 </p>
+              )}
+              {/* Con Uber Direct hay que pedir el vehículo por adelantado, y
+                  una moto no carga lo que un automóvil. Se pregunta aquí y no
+                  en Detalles porque los clientes recurrentes se saltan ese
+                  paso: confirman desde esta pantalla. */}
+              {preguntarTamano && (
+                <div style={{ marginTop: 18 }}>
+                  <label className={styles.label}>¿Qué tan grande es tu pedido?</label>
+                  <p className={styles.stepSubtextTight}>
+                    Nos dice si mandamos moto o automóvil. Un cálculo aproximado basta.
+                  </p>
+                  <div className={styles.opciones}>
+                    <button
+                      className={cx(styles.opcion, tamano === 'moto' && styles.opcionSelected)}
+                      onClick={() => setTamano('moto')}
+                    >
+                      <div className={styles.opcionTitulo}>Chico — va en moto</div>
+                      <div className={styles.opcionDesc}>
+                        Hasta 6 pares de tenis, o un bulto de ropa del tamaño de 3 pelotas de
+                        fútbol.
+                      </div>
+                    </button>
+                    <button
+                      className={cx(styles.opcion, tamano === 'auto' && styles.opcionSelected)}
+                      onClick={() => setTamano('auto')}
+                    >
+                      <div className={styles.opcionTitulo}>Grande — necesita automóvil</div>
+                      <div className={styles.opcionDesc}>
+                        Más de 6 pares de tenis, o más de 3 pelotas de fútbol de volumen.
+                      </div>
+                    </button>
+                  </div>
+                </div>
               )}
               {submitError && <p className={styles.errorMessage}>{submitError}</p>}
             </>

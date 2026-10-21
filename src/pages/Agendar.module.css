@@ -226,13 +226,13 @@
   resize: vertical;
 }
 
-.pagoOptions {
+.opciones {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.pagoOption {
+.opcion {
   text-align: left;
   padding: 16px 18px;
   border-radius: 12px;
@@ -241,18 +241,18 @@
   cursor: pointer;
 }
 
-.pagoOptionSelected {
+.opcionSelected {
   border-color: var(--color-orange);
   background: #fdeeeb;
 }
 
-.pagoOptionTitle {
+.opcionTitulo {
   font-weight: 700;
   font-size: 15px;
   color: var(--color-text-strong);
 }
 
-.pagoOptionDesc {
+.opcionDesc {
   font-size: 13px;
   color: var(--color-text-muted);
   margin-top: 2px;
@@ -357,17 +357,6 @@
   border: 2px solid var(--color-border-strong);
   color: var(--color-text-muted);
   padding: 12px 26px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.skipButton {
-  background: transparent;
-  border: 2px solid var(--color-border-strong);
-  color: var(--color-text-muted);
-  padding: 12px 22px;
   border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
