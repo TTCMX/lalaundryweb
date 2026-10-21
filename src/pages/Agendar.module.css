@@ -173,9 +173,12 @@
   margin-bottom: 22px;
 }
 
+/* Cada ventana lleva debajo quién recoge ("Uber Direct" / "Transporte
+   propio"), así que las columnas necesitan más ancho que cuando solo
+   mostraban la hora. */
 .horasGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 8px;
 }
 
@@ -419,7 +422,7 @@
     flex-wrap: wrap;
   }
   .horasGrid {
-    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
     gap: 6px;
   }
   .horasGrid .choiceButton {

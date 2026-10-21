@@ -31,11 +31,20 @@ const RANGOS_VIERNES = buildHourRanges(10, 14, 2); // 10-12, 12-2
 const ZONAS_TRANSPORTE_PROPIO = ['A', 'B'];
 const DIAS_TRANSPORTE_PROPIO = [0, 1, 3, 4]; // domingo, lunes, miércoles, jueves
 const VENTANA_PROPIA = { start: 20, end: 22 };
+const esVentanaNocturna = (rango) =>
+  rango.start === VENTANA_PROPIA.start && rango.end === VENTANA_PROPIA.end;
 const esTransportePropio = (zona, weekdayIndex, rango) =>
   ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
   DIAS_TRANSPORTE_PROPIO.includes(weekdayIndex) &&
-  rango.start === VENTANA_PROPIA.start &&
-  rango.end === VENTANA_PROPIA.end;
+  esVentanaNocturna(rango);
+
+// En A y B la ventana de 8 a 10pm es nuestra, así que los días sin ruta de
+// la tarde (el martes) no se ofrece en vez de caer a Uber Direct de noche.
+// En las demás zonas esa ventana siempre fue de Uber Direct y no cambia.
+const ventanaDisponible = (zona, weekdayIndex, rango) =>
+  !(ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
+    esVentanaNocturna(rango) &&
+    !DIAS_TRANSPORTE_PROPIO.includes(weekdayIndex));
 
 // Pedido mínimo sugerido por zona. Es informativo: no bloquea el agendado,
 // solo le dice al cliente a partir de cuánto le conviene el servicio.
@@ -95,6 +104,7 @@ function horasFor(date, weekdayIndex, zona) {
   const cutoff = new Date(Date.now() + MIN_LEAD_HOURS * 60 * 60 * 1000);
   return ranges
     .filter((range) => {
+      if (!ventanaDisponible(zona, weekdayIndex, range)) return false;
       const slotStart = new Date(date);
       slotStart.setHours(range.start, 0, 0, 0);
       return slotStart >= cutoff;
@@ -773,11 +783,13 @@ export default function Agendar() {
                       disabled={isFull}
                     >
                       {isFull ? 'Lleno' : hora.label}
-                      {/* Marcar la ventana de transporte propio: es la única
-                          con hora garantizada, y conviene verlo antes de
-                          elegir, no después. */}
-                      {!isFull && hora.propio && (
-                        <div className={styles.choiceButtonSubtext}>Equipo propio</div>
+                      {/* Cada ventana dice quién recoge: conviene verlo antes
+                          de elegir, no después, porque solo la propia tiene
+                          hora comprometida. */}
+                      {!isFull && (
+                        <div className={styles.choiceButtonSubtext}>
+                          {hora.propio ? 'Transporte propio' : 'Uber Direct'}
+                        </div>
                       )}
                     </button>
                   );
