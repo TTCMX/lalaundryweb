@@ -10,38 +10,47 @@ const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles',
 const LAST_STEP = STEP_LABELS.length - 1;
 const DIAS_HORIZON = 6;
 const MIN_LEAD_HOURS = 2;
-const HORA_DAYTIME = { start: 10, end: 16 };
-const HORA_EVENING = { start: 20, end: 22 };
-// Which weekdays (0=domingo...6=sábado) get each block, per zone.
-const ZONE_SCHEDULES = {
-  A: { daytime: [1, 2, 3, 4, 5], evening: [0, 1, 3, 4] },
-  B: { daytime: [2, 5], evening: [0, 1, 3, 4] },
-  C: { daytime: [], evening: [0, 1, 3, 4] },
-  D: { daytime: [], evening: [0, 3] },
-  E: { daytime: [], evening: [1, 4] },
-};
-// Serviced via Uber Direct instead of our own fleet: domingo-jueves only,
-// in 1-hour "preferred" windows (not a hard guarantee like the other
-// zones) — Uber Direct confirms the exact time over WhatsApp.
-const EXTERNAL_ZONES = ['F', 'G'];
-const EXTERNAL_DAYS = [0, 1, 2, 3, 4]; // domingo-jueves
-function buildHourRanges(startHour, endHour) {
+// Toda recolección se hace con Uber Direct, en ventanas de 2 horas iguales
+// para cualquier zona: domingo a jueves de 10am a 10pm, y viernes solo de
+// 10am a 2pm. Sábado no hay servicio.
+function buildHourRanges(startHour, endHour, step = 1) {
   const ranges = [];
-  for (let h = startHour; h < endHour; h += 1) {
-    ranges.push({ start: h, end: h + 1 });
+  for (let h = startHour; h + step <= endHour; h += step) {
+    ranges.push({ start: h, end: h + step });
   }
   return ranges;
 }
-const EXTERNAL_RANGES = buildHourRanges(10, 21); // 10am a 9pm
-// Las zonas externas solo reciben lavandería y tenis — la tintorería no se
+const DIAS_SEMANA = [0, 1, 2, 3, 4]; // domingo a jueves
+const DIA_VIERNES = 5;
+const RANGOS_SEMANA = buildHourRanges(10, 22, 2); // 10-12, 12-2, ... 8-10pm
+const RANGOS_VIERNES = buildHourRanges(10, 14, 2); // 10-12, 12-2
+
+// La única excepción: en A y B la ventana de 8 a 10pm la cubre nuestro propio
+// equipo, los mismos días que ya la cubría la ruta de la tarde. En esa
+// ventana el horario sí es un compromiso, no una preferencia.
+const ZONAS_TRANSPORTE_PROPIO = ['A', 'B'];
+const DIAS_TRANSPORTE_PROPIO = [0, 1, 3, 4]; // domingo, lunes, miércoles, jueves
+const VENTANA_PROPIA = { start: 20, end: 22 };
+const esTransportePropio = (zona, weekdayIndex, rango) =>
+  ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
+  DIAS_TRANSPORTE_PROPIO.includes(weekdayIndex) &&
+  rango.start === VENTANA_PROPIA.start &&
+  rango.end === VENTANA_PROPIA.end;
+
+// Pedido mínimo sugerido por zona. Es informativo: no bloquea el agendado,
+// solo le dice al cliente a partir de cuánto le conviene el servicio.
+const MINIMO_POR_ZONA = { A: 300, B: 300, C: 500, D: 500, E: 1000, F: 1000, G: 1000 };
+const formatMXN = (n) => `$${n.toLocaleString('es-MX')}`;
+
+// Las zonas más lejanas solo reciben lavandería y tenis — la tintorería no se
 // ofrece ahí, así que hay que avisarlo antes de que agenden.
+const ZONAS_SIN_TINTORERIA = ['F', 'G'];
 const SIN_TINTORERIA_MESSAGE =
   'Importante: en tu zona solo está disponible lavandería y tenis. Por ahora no ofrecemos ' +
   'tintorería (sacos, vestidos, abrigos y demás prendas de tintorería).';
 const UBER_DIRECT_MESSAGE =
   '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
-  'proveedor externo (Uber Direct). El transporte es gratis en pedidos de $1,000 o más; en ' +
-  'pedidos menores, el transporte cuesta $250.';
+  'proveedor externo (Uber Direct).';
 const NEXT_LABELS = [
   'Continuar',
   'Continuar',
@@ -78,16 +87,11 @@ function toISODate(date) {
 // than today every slot is already well past that, so this only ever
 // filters today's remaining options.
 function horasFor(date, weekdayIndex, zona) {
+  if (!zona) return [];
   let ranges;
-  if (EXTERNAL_ZONES.includes(zona)) {
-    ranges = EXTERNAL_DAYS.includes(weekdayIndex) ? EXTERNAL_RANGES : [];
-  } else {
-    const schedule = ZONE_SCHEDULES[zona];
-    if (!schedule) return [];
-    ranges = [];
-    if (schedule.daytime.includes(weekdayIndex)) ranges.push(HORA_DAYTIME);
-    if (schedule.evening.includes(weekdayIndex)) ranges.push(HORA_EVENING);
-  }
+  if (DIAS_SEMANA.includes(weekdayIndex)) ranges = RANGOS_SEMANA;
+  else if (weekdayIndex === DIA_VIERNES) ranges = RANGOS_VIERNES;
+  else return []; // sábado
   const cutoff = new Date(Date.now() + MIN_LEAD_HOURS * 60 * 60 * 1000);
   return ranges
     .filter((range) => {
@@ -95,7 +99,11 @@ function horasFor(date, weekdayIndex, zona) {
       slotStart.setHours(range.start, 0, 0, 0);
       return slotStart >= cutoff;
     })
-    .map((range) => ({ ...range, label: formatHoraRange(range) }));
+    .map((range) => ({
+      ...range,
+      label: formatHoraRange(range),
+      propio: esTransportePropio(zona, weekdayIndex, range),
+    }));
 }
 
 // Zone-less (zona === null, e.g. coverage not resolved yet) yields no days.
@@ -213,12 +221,20 @@ export default function Agendar() {
         setZona(null);
         return null;
       }
+      // `externo` marcaba las zonas que servía un tercero y que por eso no
+      // podían elegir horario. Ahora toda recolección se hace con Uber
+      // Direct, así que agendan igual que el resto: lo único que hace falta
+      // es la zona, para saber su mínimo sugerido y si hay tintorería.
+      // Sin zona no hay calendario que ofrecer, y ahí sí se cae al aviso.
       if (data.externo) {
-        // Known zone, but served via Uber Direct instead of our own
-        // scheduler for now — can't proceed to Horario from here.
-        setCobertura('externo');
-        setZona(null);
-        return null;
+        if (!data.zona) {
+          setCobertura('externo');
+          setZona(null);
+          return null;
+        }
+        setCobertura('covered');
+        setZona(data.zona);
+        return data.zona;
       }
       setCobertura(data.covered ? 'covered' : 'not-covered');
       const resolvedZona = data.covered ? data.zona || null : null;
@@ -414,12 +430,13 @@ export default function Agendar() {
   const finalizarReserva = async () => {
     setSubmitError('');
     setSubmitting(true);
-    // Uber Direct fulfills F/G, not our own fleet — flag it in the notes
-    // (which also flow through to the ops app's "notas" field) along with
-    // the preferred window the customer picked, since hora_label there
-    // isn't a hard-guaranteed slot the way it is for other zones.
-    const detallesFinal = EXTERNAL_ZONES.includes(zona)
-      ? [`Transporte por tercero. Horario preferido: ${HORAS[horaSel].label}.`, detalles || null]
+    // Casi toda recolección la hace Uber Direct, no nuestra flota: hay que
+    // marcarlo en las notas (que pasan al campo "notas" de la app de
+    // operaciones) junto con la ventana que eligió el cliente, porque ahí
+    // hora_label no es un horario comprometido como en el transporte propio.
+    const horaElegida = HORAS[horaSel];
+    const detallesFinal = horaElegida && !horaElegida.propio
+      ? [`Transporte por tercero. Horario preferido: ${horaElegida.label}.`, detalles || null]
           .filter(Boolean)
           .join(' ')
       : detalles || undefined;
@@ -628,9 +645,11 @@ export default function Agendar() {
                     <CheckIcon />
                   </span>
                   <span className={styles.successText}>
-                    {EXTERNAL_ZONES.includes(zona)
-                      ? UBER_DIRECT_MESSAGE
-                      : '¡Buenas noticias! Tenemos cobertura en tu zona.'}
+                    {UBER_DIRECT_MESSAGE}
+                    {ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
+                      ' Las recolecciones de 8 a 10pm las hace nuestro propio equipo.'}
+                    {MINIMO_POR_ZONA[zona] &&
+                      ` Pedido mínimo sugerido en tu zona: ${formatMXN(MINIMO_POR_ZONA[zona])}.`}
                   </span>
                 </div>
               )}
@@ -643,7 +662,7 @@ export default function Agendar() {
                 </div>
               )}
               {(cobertura === 'externo' ||
-                (cobertura === 'covered' && EXTERNAL_ZONES.includes(zona))) && (
+                (cobertura === 'covered' && ZONAS_SIN_TINTORERIA.includes(zona))) && (
                 <div className={styles.avisoBanner}>
                   <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
                 </div>
@@ -733,16 +752,10 @@ export default function Agendar() {
                   </button>
                 ))}
               </div>
-              {EXTERNAL_ZONES.includes(zona) && (
-                <>
-                  <p className={styles.hint}>
-                    Este es tu horario preferido — un proveedor externo (Uber Direct) lo confirma
-                    por WhatsApp.
-                  </p>
-                  <div className={styles.avisoBanner} style={{ marginTop: 0, marginBottom: 16 }}>
-                    <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
-                  </div>
-                </>
+              {ZONAS_SIN_TINTORERIA.includes(zona) && (
+                <div className={styles.avisoBanner} style={{ marginTop: 0, marginBottom: 16 }}>
+                  <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
+                </div>
               )}
               <div className={styles.horasGrid}>
                 {HORAS.map((hora, i) => {
@@ -760,10 +773,25 @@ export default function Agendar() {
                       disabled={isFull}
                     >
                       {isFull ? 'Lleno' : hora.label}
+                      {/* Marcar la ventana de transporte propio: es la única
+                          con hora garantizada, y conviene verlo antes de
+                          elegir, no después. */}
+                      {!isFull && hora.propio && (
+                        <div className={styles.choiceButtonSubtext}>Equipo propio</div>
+                      )}
                     </button>
                   );
                 })}
               </div>
+              {/* El aviso depende de la ventana elegida, no de la zona: un
+                  mismo día en A o B mezcla las dos formas de transporte. */}
+              {HORAS[horaSel] && (
+                <p className={styles.hint}>
+                  {HORAS[horaSel].propio
+                    ? 'Esta ventana la cubre nuestro propio equipo: llegamos dentro de ese horario.'
+                    : 'Este es tu horario preferido — la recolección es con Uber Direct, que confirma la hora exacta por WhatsApp.'}
+                </p>
+              )}
               {submitError && <p className={styles.errorMessage}>{submitError}</p>}
             </>
           )}
