@@ -199,6 +199,23 @@
   border-radius: 999px;
 }
 
+/* Secundario: va al lado del CTA naranja y no debe competir con él. Quien
+   ya tiene pedido lo busca a propósito; quien no, va a "Agendar". */
+.navSecundario {
+  color: var(--color-text-strong);
+  background: transparent;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 9px 18px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.navSecundario:hover {
+  border-color: var(--color-orange);
+}
+
 .footer {
   margin-top: auto;
   background: var(--color-navy-dark);
@@ -224,9 +241,12 @@
   font-size: 14px;
 }
 
+/* Con cinco enlaces ya no caben en una línea en celular: sin el wrap, el
+   último se salía de la pantalla. */
 .footerLinks {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 14px 24px;
 }
 
 .footerLink {

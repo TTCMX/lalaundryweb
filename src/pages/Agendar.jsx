@@ -6,6 +6,9 @@ import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 
+// Seguimiento: vive en la app de operaciones y pide el teléfono.
+const URL_MI_ORDEN = 'https://app.lalaundry.xyz/miorden';
+
 const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Listo'];
 const LAST_STEP = STEP_LABELS.length - 1;
 const DIAS_HORIZON = 6;
@@ -919,6 +922,11 @@ export default function Agendar() {
                 </div>
               </div>
               <InvitacionMembresia telefono={telefono} />
+              {/* El pedido acaba de crearse, así que ya se puede seguir: en
+                  /miorden se entra con el mismo teléfono que puso arriba. */}
+              <a href={URL_MI_ORDEN} className={styles.seguimientoBoton}>
+                Ver el estatus de mi pedido
+              </a>
               <Link to="/" className={styles.volverLink}>
                 Volver al inicio →
               </Link>

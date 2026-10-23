@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import styles from './Layout.module.css';
 
+// El seguimiento vive en la app de operaciones, no en este sitio. El enlace
+// es el mismo para todos: /miorden pide el teléfono y de ahí saca el pedido,
+// así que no hay nada que personalizar ni que proteger en la URL.
+const URL_MI_ORDEN = 'https://app.lalaundry.xyz/miorden';
+
 const NAV_LINKS = [
   { to: '/', label: 'Inicio' },
   { to: '/catalogo', label: 'Catálogo' },
@@ -37,6 +42,9 @@ function Header() {
             {link.label}
           </NavLink>
         ))}
+        <a href={URL_MI_ORDEN} className={styles.navSecundario}>
+          Mi pedido
+        </a>
         <NavLink to="/agendar" className={styles.navCta}>
           Agendar recolección
         </NavLink>
@@ -71,6 +79,9 @@ function Header() {
               {link.label}
             </NavLink>
           ))}
+          <a href={URL_MI_ORDEN} className={styles.mobileMenuLink}>
+            Mi pedido
+          </a>
         </div>
       )}
     </header>
@@ -96,6 +107,9 @@ function Footer() {
         <NavLink to="/agendar" className={styles.footerLink}>
           Agendar
         </NavLink>
+        <a href={URL_MI_ORDEN} className={styles.footerLink}>
+          Mi pedido
+        </a>
       </div>
     </footer>
   );

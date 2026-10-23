@@ -333,6 +333,21 @@
   font-weight: 600;
 }
 
+/* Botón de seguimiento en la pantalla final: es el momento de más intención
+   —acaba de agendar— y ahí el enlace tiene que pesar más que "Volver". */
+.seguimientoBoton {
+  display: block;
+  margin-top: 24px;
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  text-align: center;
+}
+
 .volverLink {
   display: inline-block;
   margin-top: 26px;
