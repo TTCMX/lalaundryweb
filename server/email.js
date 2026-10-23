@@ -160,3 +160,47 @@ export async function sendOwnerBookingNotification(booking) {
     return { skipped: true, reason: 'send-failed', error: err.message };
   }
 }
+
+// ─── TARJETAS DE REGALO ──────────────────────────────────────────────────
+export function formatGiftCardHtml(tarjeta) {
+  const para = tarjeta.destinatario_nombre ? ` para ${tarjeta.destinatario_nombre}` : '';
+  return renderEmailShell({
+    eyebrow: 'Tarjeta de regalo',
+    heading: `Tu tarjeta de regalo${para} está lista`,
+    intro: tarjeta.mensaje
+      ? `Mensaje: “${tarjeta.mensaje}”`
+      : 'Comparte este código con quien la va a usar.',
+    rows: [
+      { label: 'Código', value: tarjeta.codigo },
+      { label: 'Saldo', value: `$${tarjeta.monto_inicial}` },
+      { label: 'Pagaste', value: `$${tarjeta.monto_pagado}` },
+    ],
+    footerNote:
+      'El saldo no caduca y se puede usar en varios pedidos: si sobra, se queda en la tarjeta. ' +
+      'Para usarlo, dale el código a quien te recoja o escríbenos por WhatsApp.',
+  });
+}
+
+// El correo va a quien la compró, no al destinatario: es quien decide cómo y
+// cuándo entregarla, y quien nos dejó su correo.
+export async function sendGiftCardEmail(tarjeta) {
+  if (!tarjeta?.comprador_email) return { skipped: true, reason: 'no-email' };
+
+  const resend = getResend();
+  if (!resend) return { skipped: true, reason: 'no-api-key' };
+
+  const from = process.env.RESEND_FROM_EMAIL || 'La Laundry <onboarding@resend.dev>';
+
+  try {
+    await resend.emails.send({
+      from,
+      to: tarjeta.comprador_email,
+      subject: `Tu tarjeta de regalo de La Laundry — $${tarjeta.monto_inicial} de saldo`,
+      html: formatGiftCardHtml(tarjeta),
+    });
+    return { skipped: false };
+  } catch (err) {
+    console.error('[email] no se pudo mandar la tarjeta:', err);
+    return { skipped: true, reason: 'send-failed', error: err.message };
+  }
+}

@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { to: '/catalogo', label: 'Catálogo' },
   { to: '/cobertura', label: 'Cobertura' },
   { to: '/membresia', label: 'Membresía' },
+  { to: '/tarjeta-regalo', label: 'Tarjetas' },
   // Academy oculta temporalmente — se retoma más adelante.
 ];
 
@@ -103,6 +104,9 @@ function Footer() {
         </NavLink>
         <NavLink to="/membresia" className={styles.footerLink}>
           Membresía
+        </NavLink>
+        <NavLink to="/tarjeta-regalo" className={styles.footerLink}>
+          Tarjetas de regalo
         </NavLink>
         <NavLink to="/agendar" className={styles.footerLink}>
           Agendar

@@ -67,6 +67,51 @@ export async function createPreference(booking) {
   return res.json();
 }
 
+// Cobro de una tarjeta de regalo. El external_reference lleva prefijo para
+// que el webhook distinga una tarjeta de una reserva: los dos son uuid y sin
+// la marca no hay forma de saber cuál es cuál.
+export const REF_TARJETA = 'tarjeta:';
+
+export async function createGiftCardPreference({ id, precio, creditos, compradorEmail }) {
+  const siteUrl = getSiteUrl();
+
+  const body = {
+    items: [
+      {
+        title: `Tarjeta de regalo La Laundry — $${creditos} de saldo`,
+        quantity: 1,
+        currency_id: 'MXN',
+        unit_price: precio,
+      },
+    ],
+    external_reference: `${REF_TARJETA}${id}`,
+    ...(compradorEmail ? { payer: { email: compradorEmail } } : {}),
+    back_urls: {
+      success: `${siteUrl}/tarjeta-regalo/gracias?id=${id}`,
+      pending: `${siteUrl}/tarjeta-regalo/gracias?id=${id}`,
+      failure: `${siteUrl}/tarjeta-regalo/gracias?id=${id}`,
+    },
+    auto_return: 'approved',
+    notification_url: `${siteUrl}/api/mercadopago-webhook`,
+  };
+
+  const res = await fetch(`${MP_API}/checkout/preferences`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${getAccessToken()}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`MercadoPago gift card preference failed (${res.status}): ${text}`);
+  }
+
+  return res.json();
+}
+
 export async function getPayment(paymentId) {
   const res = await fetch(`${MP_API}/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${getAccessToken()}` },

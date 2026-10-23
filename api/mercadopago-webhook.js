@@ -1,6 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
-import { getPayment } from '../server/mercadopago.js';
-import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
+import { getPayment, REF_TARJETA } from '../server/mercadopago.js';
+import { sendBookingConfirmationEmail, sendOwnerBookingNotification, sendGiftCardEmail } from '../server/email.js';
 import { notifyOpsApp } from '../server/opsApp.js';
 
 const STATUS_MAP = {
@@ -37,6 +37,42 @@ export default async function handler(req, res) {
     const bookingId = payment.external_reference;
     if (!bookingId) {
       res.status(200).json({ ignored: true, reason: 'no-external-reference' });
+      return;
+    }
+
+    // Las tarjetas de regalo vienen marcadas en la referencia: sin eso no se
+    // distinguen de una reserva, porque las dos son uuid.
+    if (String(bookingId).startsWith(REF_TARJETA)) {
+      const tarjetaId = String(bookingId).slice(REF_TARJETA.length);
+      if (payment.status !== 'approved') {
+        // Solo se activa con el cobro confirmado. Un rechazo deja la tarjeta
+        // pendiente, sin saldo que gastar.
+        res.status(200).json({ ignored: true, reason: 'pago-no-aprobado' });
+        return;
+      }
+      const supabaseT = getSupabaseClient();
+      const { data: filas, error: errBusca } = await supabaseT
+        .from('gift_cards').select('mercadopago_preference_id').eq('id', tarjetaId).limit(1);
+      if (errBusca) throw errBusca;
+      const pref = filas?.[0]?.mercadopago_preference_id;
+      if (!pref) {
+        res.status(200).json({ ignored: true, reason: 'tarjeta-sin-preferencia' });
+        return;
+      }
+      // Activar es idempotente: MercadoPago reintenta este webhook.
+      const { data: tarjeta, error: errAct } = await supabaseT.rpc('gift_card_activar', {
+        p_preference_id: pref,
+        p_payment_id: String(payment.id),
+      });
+      if (errAct) throw errAct;
+
+      // El correo no puede tumbar la activación: el saldo ya existe.
+      try {
+        await sendGiftCardEmail(tarjeta);
+      } catch (e) {
+        console.error('[mercadopago-webhook] no se pudo mandar la tarjeta:', e);
+      }
+      res.status(200).json({ ok: true, tarjeta: tarjetaId });
       return;
     }
 

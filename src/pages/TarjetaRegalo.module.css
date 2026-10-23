@@ -1,0 +1,135 @@
+.section { padding: 48px 24px 72px; }
+
+.container { max-width: 620px; margin: 0 auto; }
+
+.title {
+  font-family: var(--font-display, inherit);
+  font-size: 34px;
+  color: var(--color-navy);
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.intro {
+  font-size: 15px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 0 0 28px;
+  line-height: 1.5;
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 18px;
+  padding: 26px 24px;
+}
+
+.paquetes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 520px) {
+  .paquetes { grid-template-columns: 1fr; }
+}
+
+.paquete {
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-bg);
+  border-radius: 14px;
+  padding: 16px 12px;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+}
+
+.paqueteSel {
+  border-color: var(--color-orange);
+  background: #fdeeeb;
+}
+
+.paquetePrecio {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-text-strong);
+}
+
+.paqueteSaldo {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-orange);
+  margin-top: 4px;
+}
+
+.paqueteBono {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-strong);
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border-strong);
+  font-size: 15px;
+  font-family: inherit;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.boton {
+  width: 100%;
+  background: var(--color-orange);
+  color: var(--color-orange-on);
+  border: none;
+  border-radius: 12px;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.botonOff { opacity: 0.5; cursor: default; }
+
+.error {
+  color: #a8332a;
+  font-size: 14px;
+  margin: 12px 0 0;
+  line-height: 1.45;
+}
+
+.nota {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 18px 0 0;
+}
+
+.codigo {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--color-text-strong);
+  text-align: center;
+  background: var(--color-bg);
+  border: 2px dashed var(--color-border-strong);
+  border-radius: 12px;
+  padding: 18px 12px;
+  margin: 18px 0;
+}
+
+.centro { text-align: center; }
