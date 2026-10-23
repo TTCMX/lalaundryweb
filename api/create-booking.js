@@ -25,6 +25,7 @@ export default async function handler(req, res) {
     lat,
     lng,
     esRecurrente,
+    transporte,
   } = req.body || {};
 
   if (!direccion || !telefono || !diaLabel || !horaLabel) {
@@ -81,7 +82,10 @@ export default async function handler(req, res) {
     // Never let a hiccup here (ops app down, missing columns, etc.) turn an
     // already-confirmed booking into a failure response for the customer.
     try {
-      const opsResult = await notifyOpsApp(booking);
+      // El transporte va aparte y no a la fila: `bookings` es el registro de
+      // este sitio y la app de operaciones es la que lleva el pedido. Pasarlo
+      // como argumento evita una migración aquí para un dato que vive allá.
+      const opsResult = await notifyOpsApp(booking, { transporte });
       if (opsResult.ok) {
         await supabase
           .from('bookings')

@@ -5,7 +5,9 @@ const DEFAULT_OPS_AGENDAR_URL = 'https://app.lalaundry.xyz/api/agendar';
 // this site's leads/capacity/emails, the ops app gets its own copy).
 // Best-effort — a failure here never blocks the customer's booking, since
 // it already succeeded in our own database by the time this is called.
-export async function notifyOpsApp(booking) {
+const TRANSPORTES = ['uber_direct', 'propio'];
+
+export async function notifyOpsApp(booking, { transporte } = {}) {
   const url = process.env.OPS_AGENDAR_URL || DEFAULT_OPS_AGENDAR_URL;
 
   try {
@@ -35,6 +37,11 @@ export async function notifyOpsApp(booking) {
         // a alguien que ya pagó su depósito.
         anticipo: booking.pago_status === 'pagado' ? Number(booking.deposito_monto) || 0 : 0,
         pagoMetodo: booking.pago_status === 'pagado' ? 'Link de pago' : undefined,
+        // Con qué se recoge: la app de operaciones lo guarda en el pedido y
+        // su reporte semanal separa por esto. Si llega algo que no
+        // reconocemos se omite, para que allá quede como "no se sabe" en vez
+        // de contarse en el transporte equivocado.
+        transporte: TRANSPORTES.includes(transporte) ? transporte : undefined,
       }),
     });
 

@@ -474,6 +474,9 @@ export default function Agendar() {
       horaLabel: HORAS[horaSel].label,
       fecha: DIAS[diaSel].isoDate,
       detalles: detallesFinal,
+      // Con qué se recoge. La app de operaciones lo guarda en el pedido y el
+      // reporte semanal separa por esto, así que no basta con la nota.
+      transporte: horaElegida?.propio ? 'propio' : 'uber_direct',
       placeId: place?.placeId,
       lat: place?.lat,
       lng: place?.lng,
