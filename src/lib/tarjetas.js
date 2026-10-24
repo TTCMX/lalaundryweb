@@ -11,6 +11,16 @@ export const TARJETAS = [
   { precio: 2000, creditos: 2600 },
 ];
 
+// TEMPORAL — paquete de prueba. Existe solo para validar el cobro de punta a
+// punta (MercadoPago, webhook, activación y correo) sin pagar $500 de verdad.
+// No da bono: se paga 30 y se reciben 30, así que nadie gana nada con él.
+//
+// A propósito NO está en TARJETAS: así no aparece en la rejilla. Solo se
+// ofrece entrando a /tarjeta-regalo?prueba=1. Cuando termine la prueba se
+// borra esto, su gemelo en laundry-os/lib/tarjetas.js y su uso en
+// TarjetaRegalo.jsx.
+export const TARJETA_PRUEBA = { precio: 30, creditos: 30, prueba: true };
+
 export const bonoDe = (t) => (t ? t.creditos - t.precio : 0);
 
 export const porcentajeBono = (t) =>
@@ -20,6 +30,6 @@ export const porcentajeBono = (t) =>
 // formulario. Un precio fuera del catálogo no se vende, para que nadie arme
 // una petición pidiendo 10,000 créditos por un peso.
 export const tarjetaPorPrecio = (precio) =>
-  TARJETAS.find((t) => t.precio === Number(precio)) || null;
+  [...TARJETAS, TARJETA_PRUEBA].find((t) => t.precio === Number(precio)) || null;
 
 export const formatMXN = (n) => `$${Number(n || 0).toLocaleString('es-MX')}`;
