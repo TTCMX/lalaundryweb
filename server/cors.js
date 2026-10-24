@@ -27,18 +27,18 @@ export const ORIGENES_PERMITIDOS = [
 // sin probar las ramas antes de publicarlas.
 const PREVIEW = /^https:\/\/[a-z0-9-]+\.vercel\.app$/;
 
-const permitido = (origen) =>
+export const origenValido = (origen) =>
   !!origen && (ORIGENES_PERMITIDOS.includes(origen) || PREVIEW.test(origen));
 
 export const origenPermitido = (req) => {
   const origin = req.headers?.origin;
-  if (origin) return permitido(origin);
+  if (origin) return origenValido(origin);
   // Los POST de un navegador siempre traen Origin, incluso del mismo sitio.
   // Si falta, se acepta el referer como respaldo antes de rechazar: los GET
   // navegados a mano no mandan Origin.
   const referer = req.headers?.referer || '';
   try {
-    return permitido(new URL(referer).origin);
+    return origenValido(new URL(referer).origin);
   } catch {
     return false;
   }
@@ -46,7 +46,7 @@ export const origenPermitido = (req) => {
 
 export const setCors = (req, res, metodo = 'POST') => {
   const origin = req.headers?.origin;
-  if (permitido(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
+  if (origenValido(origin)) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Vary', 'Origin');
   res.setHeader('Access-Control-Allow-Methods', `${metodo}, OPTIONS`);
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

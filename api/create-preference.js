@@ -71,7 +71,7 @@ export default async function handler(req, res) {
     const { data: booking, error } = await query.select().single();
     if (error) throw error;
 
-    const preference = await createPreference(booking);
+    const preference = await createPreference(booking, req);
 
     await supabase
       .from('bookings')

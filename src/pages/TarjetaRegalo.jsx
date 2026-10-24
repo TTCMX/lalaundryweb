@@ -6,6 +6,43 @@ import styles from './TarjetaRegalo.module.css';
 const POLL_MS = 2500;
 const MAX_POLLS = 10;
 
+// Las tarjetas se emiten y se consultan en la app de operaciones, no aquí:
+// viven en su base de datos, con llave a los pedidos y a los empleados. Este
+// sitio tiene su propio proyecto de Supabase, donde esas tablas no existen.
+// Los dos dominios están en la lista de CORS de allá.
+const API_OPS = 'https://app.lalaundry.xyz/api';
+
+// Lo que ve quien compra cuando no se pudo arrancar el cobro. Los códigos que
+// manda el servidor dicen si la culpa es de lo que escribió o nuestra; en el
+// segundo caso se enseña el código entre paréntesis para poder arreglarlo sin
+// ir a buscar los registros del servidor.
+const MENSAJES = {
+  'correo-invalido': 'Ese correo no se ve bien. Revísalo y vuelve a intentar.',
+  'paquete-invalido': 'Ese monto ya no está disponible. Elige uno de los paquetes de arriba.',
+  'rate-limited': 'Demasiados intentos seguidos. Espera un minuto y vuelve a probar.',
+  'Origen no permitido': 'Algo bloqueó la petición. Recarga la página e intenta otra vez.',
+};
+
+const NUESTRA_CULPA = {
+  'falta-token-mp': 'falta la llave de cobro',
+  'falta-migracion': 'falta la migración de tarjetas',
+  'mercadopago-rechazo': 'MercadoPago rechazó el cobro',
+  'no-se-guardo-preferencia': 'no se guardó la referencia del cobro',
+  'sin-red': 'no se pudo hablar con MercadoPago',
+};
+
+export const mensajeDeError = (codigo, status) => {
+  if (MENSAJES[codigo]) return MENSAJES[codigo];
+  if (NUESTRA_CULPA[codigo]) {
+    return `No pudimos iniciar el pago: es algo de nuestro lado, no tuyo. ` +
+      `Escríbenos por WhatsApp y lo resolvemos (${NUESTRA_CULPA[codigo]}).`;
+  }
+  if (status === 404) {
+    return 'La compra de tarjetas no está disponible en este momento. Escríbenos por WhatsApp.';
+  }
+  return 'No pudimos iniciar el pago. Intenta de nuevo en un momento.';
+};
+
 // Pantalla de gracias: se entra aquí de vuelta de MercadoPago. El código solo
 // existe cuando el webhook confirmó el cobro, y eso puede tardar unos
 // segundos, así que se consulta hasta que aparezca.
@@ -19,7 +56,7 @@ function Gracias({ id }) {
     let timer;
     async function consultar() {
       try {
-        const res = await fetch(`/api/tarjeta-estado?id=${encodeURIComponent(id)}`);
+        const res = await fetch(`${API_OPS}/tarjeta-estado?id=${encodeURIComponent(id)}`);
         if (!res.ok) { if (vivo) setFalló(true); return; }
         const data = await res.json();
         if (!vivo) return;
@@ -90,6 +127,7 @@ export default function TarjetaRegalo() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
 
+
   if (idGracias) return <Gracias id={idGracias} />;
 
   const comprar = async () => {
@@ -98,16 +136,14 @@ export default function TarjetaRegalo() {
     if (!compradorEmail.trim()) { setError('Necesitamos tu correo para mandarte el código.'); return; }
     setEnviando(true);
     try {
-      const res = await fetch('/api/comprar-tarjeta', {
+      const res = await fetch(`${API_OPS}/comprar-tarjeta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ precio, compradorNombre, compradorEmail, destinatarioNombre, mensaje }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.init_point) {
-        setError(data.error === 'correo-invalido'
-          ? 'Ese correo no se ve bien. Revísalo y vuelve a intentar.'
-          : 'No pudimos iniciar el pago. Intenta de nuevo en un momento.');
+        setError(mensajeDeError(data.error, res.status));
         setEnviando(false);
         return;
       }
