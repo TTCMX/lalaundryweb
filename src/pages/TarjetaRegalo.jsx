@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { TARJETAS, TARJETA_PRUEBA, porcentajeBono, formatMXN } from '../lib/tarjetas.js';
+import { TARJETAS, porcentajeBono, formatMXN } from '../lib/tarjetas.js';
 import styles from './TarjetaRegalo.module.css';
 
 const POLL_MS = 2500;
@@ -119,10 +119,6 @@ export default function TarjetaRegalo() {
   const [params] = useSearchParams();
   const idGracias = params.get('id');
 
-  // TEMPORAL — con ?prueba=1 se ofrece además el paquete de $30, para probar
-  // el cobro completo sin pagar $500. Quien entre normal no lo ve.
-  const paquetes = params.get('prueba') ? [...TARJETAS, TARJETA_PRUEBA] : TARJETAS;
-
   const [precio, setPrecio] = useState(TARJETAS[1].precio);
   const [compradorNombre, setCompradorNombre] = useState('');
   const [compradorEmail, setCompradorEmail] = useState('');
@@ -169,7 +165,7 @@ export default function TarjetaRegalo() {
 
         <div className={styles.card}>
           <div className={styles.paquetes}>
-            {paquetes.map((t) => (
+            {TARJETAS.map((t) => (
               <button
                 key={t.precio}
                 type="button"
@@ -178,9 +174,7 @@ export default function TarjetaRegalo() {
               >
                 <div className={styles.paquetePrecio}>{formatMXN(t.precio)}</div>
                 <div className={styles.paqueteSaldo}>{formatMXN(t.creditos)} de saldo</div>
-                <div className={styles.paqueteBono}>
-                  {t.prueba ? 'paquete de prueba' : `+${porcentajeBono(t)}% de regalo`}
-                </div>
+                <div className={styles.paqueteBono}>+{porcentajeBono(t)}% de regalo</div>
               </button>
             ))}
           </div>
