@@ -119,7 +119,9 @@ export default function TarjetaRegalo() {
   const [params] = useSearchParams();
   const idGracias = params.get('id');
 
-  const [precio, setPrecio] = useState(TARJETAS[1].precio);
+  // Viene preseleccionado el paquete de entrada. Antes era el de en medio de
+  // tres; con dos ya no hay medio, y dejar marcado el más caro es empujar.
+  const [precio, setPrecio] = useState(TARJETAS[0].precio);
   const [compradorNombre, setCompradorNombre] = useState('');
   const [compradorEmail, setCompradorEmail] = useState('');
   const [destinatarioNombre, setDestinatarioNombre] = useState('');

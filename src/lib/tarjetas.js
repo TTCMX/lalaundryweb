@@ -5,8 +5,9 @@
 //
 // Esta lista está duplicada en laundry-os/lib/tarjetas.js: son dos repos
 // distintos. Si cambian los paquetes, cambian en los dos.
+// La de $500 se dejó de vender el 29-oct-2026. Las que ya se habían comprado
+// siguen funcionando: el saldo vive en la base, no en esta lista.
 export const TARJETAS = [
-  { precio: 500,  creditos: 550 },
   { precio: 1000, creditos: 1200 },
   { precio: 2000, creditos: 2600 },
 ];

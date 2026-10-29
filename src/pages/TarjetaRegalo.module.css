@@ -25,9 +25,12 @@
   padding: 26px 24px;
 }
 
+/* Se acomoda a cuantos paquetes haya en lugar de fijar el número de
+   columnas: con tres fijas y dos paquetes quedaba un hueco a la derecha, y
+   el catálogo ya cambió dos veces. */
 .paquetes {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
   margin-bottom: 24px;
 }
