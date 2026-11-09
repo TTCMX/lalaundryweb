@@ -1,8 +1,12 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { rechazar } from '../server/cors.js';
+import { limitar } from '../server/rateLimit.js';
 
 export default async function handler(req, res) {
   if (rechazar(req, res)) return;
+  // Consulta de solo lectura, pero cada llamada pega a la base. Un cliente
+  // prueba dos o tres códigos postales; nadie recorre los 1,200 de la ciudad.
+  if (limitar(req, res, { max: 40, nombre: 'check-coverage' })) return;
 
   const { cp, direccion, placeId, lat, lng } = req.body || {};
   if (!cp || typeof cp !== 'string') {

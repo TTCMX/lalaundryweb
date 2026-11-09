@@ -65,7 +65,14 @@ export default async function handler(req, res) {
       await sendOwnerBookingNotification(booking);
 
       try {
-        const opsResult = await notifyOpsApp(booking);
+        // El transporte viajó en la metadata de la preferencia (ver
+        // server/mercadopago.js): la fila de `bookings` no tiene columna para
+        // él y la app de operaciones lo necesita para su reporte semanal. Sin
+        // esto, toda reserva pagada en línea llegaba allá sin transporte y se
+        // contaba como flota propia aunque la hubiera hecho Uber.
+        const opsResult = await notifyOpsApp(booking, {
+          transporte: payment.metadata?.transporte,
+        });
         if (opsResult.ok) {
           await supabase
             .from('bookings')

@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { setCors } from '../server/cors.js';
+import { limitar } from '../server/rateLimit.js';
 
 // A diferencia del resto, aquí NO se exige el origen. Esta es la pantalla a
 // la que cae el cliente justo después de pagar, y la llamada es un GET del
@@ -17,6 +18,11 @@ export default async function handler(req, res) {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
+  // Aquí no se exige el origen (ver arriba), así que el ritmo es lo único
+  // que separa a quien acaba de reservar de quien prueba uuids. Devuelve
+  // nombre, domicilio y teléfono, así que conviene tenerlo. El tope es alto
+  // porque la pantalla reconsulta mientras espera la confirmación del pago.
+  if (limitar(req, res, { max: 60, nombre: 'booking-status' })) return;
 
   const { id } = req.query || {};
   if (!id) {

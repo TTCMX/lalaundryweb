@@ -37,7 +37,7 @@ export function getDepositAmount() {
   return amount;
 }
 
-export async function createPreference(booking, req) {
+export async function createPreference(booking, req, { transporte } = {}) {
   const siteUrl = getSiteUrl(req);
   const amount = getDepositAmount();
 
@@ -51,6 +51,16 @@ export async function createPreference(booking, req) {
       },
     ],
     external_reference: booking.id,
+    // Con qué se recoge, de ida y de vuelta.
+    //
+    // La app de operaciones lo guarda en el pedido y su reporte semanal
+    // separa por esto, pero el pedido lo crea el webhook, que solo recibe un
+    // id de pago. La fila de `bookings` no tiene columna para el transporte
+    // —es un dato de la app de operaciones, no de este sitio— así que viaja
+    // por la metadata de la preferencia, que MercadoPago devuelve pegada al
+    // pago. Sin esto, toda reserva pagada en línea llegaba allá sin
+    // transporte y el reporte la contaba como flota propia.
+    metadata: transporte ? { transporte } : undefined,
     back_urls: {
       success: `${siteUrl}/agendar/confirmacion?booking_id=${booking.id}`,
       pending: `${siteUrl}/agendar/confirmacion?booking_id=${booking.id}`,

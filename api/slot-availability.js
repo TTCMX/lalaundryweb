@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { getMaxBookingsPerSlot } from '../server/capacity.js';
 import { rechazar } from '../server/cors.js';
+import { limitar } from '../server/rateLimit.js';
 
 const ACTIVE_STATUSES = ['pendiente', 'pagado', 'pago_entrega'];
 
@@ -9,6 +10,9 @@ const ACTIVE_STATUSES = ['pendiente', 'pagado', 'pago_entrega'];
 // out it's full when they try to confirm.
 export default async function handler(req, res) {
   if (rechazar(req, res)) return;
+  // El paso del horario la llama cada vez que se cambia de día, así que el
+  // tope es holgado: frena un barrido, no el uso normal.
+  if (limitar(req, res, { max: 60, nombre: 'slot-availability' })) return;
 
   const { diaLabels } = req.body || {};
   if (!Array.isArray(diaLabels) || !diaLabels.length) {
