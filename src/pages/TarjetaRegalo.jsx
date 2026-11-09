@@ -1,239 +1,65 @@
-import { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { TARJETAS, porcentajeBono, formatMXN } from '../lib/tarjetas.js';
-import styles from './TarjetaRegalo.module.css';
+import { Link } from 'react-router-dom';
+import PageHero from '../components/PageHero.jsx';
 
-const POLL_MS = 2500;
-const MAX_POLLS = 10;
-
-// Las tarjetas se emiten y se consultan en la app de operaciones, no aquí:
-// viven en su base de datos, con llave a los pedidos y a los empleados. Este
-// sitio tiene su propio proyecto de Supabase, donde esas tablas no existen.
-// Los dos dominios están en la lista de CORS de allá.
-const API_OPS = 'https://app.lalaundry.xyz/api';
-
-// Lo que ve quien compra cuando no se pudo arrancar el cobro. Los códigos que
-// manda el servidor dicen si la culpa es de lo que escribió o nuestra; en el
-// segundo caso se enseña el código entre paréntesis para poder arreglarlo sin
-// ir a buscar los registros del servidor.
-const MENSAJES = {
-  'correo-invalido': 'Ese correo no se ve bien. Revísalo y vuelve a intentar.',
-  'paquete-invalido': 'Ese monto ya no está disponible. Elige uno de los paquetes de arriba.',
-  'rate-limited': 'Demasiados intentos seguidos. Espera un minuto y vuelve a probar.',
-  'Origen no permitido': 'Algo bloqueó la petición. Recarga la página e intenta otra vez.',
-};
-
-const NUESTRA_CULPA = {
-  'falta-token-mp': 'falta la llave de cobro',
-  'falta-migracion': 'falta la migración de tarjetas',
-  'mercadopago-rechazo': 'MercadoPago rechazó el cobro',
-  'no-se-guardo-preferencia': 'no se guardó la referencia del cobro',
-  'sin-red': 'no se pudo hablar con MercadoPago',
-};
-
-export const mensajeDeError = (codigo, status) => {
-  if (MENSAJES[codigo]) return MENSAJES[codigo];
-  if (NUESTRA_CULPA[codigo]) {
-    return `No pudimos iniciar el pago: es algo de nuestro lado, no tuyo. ` +
-      `Escríbenos por WhatsApp y lo resolvemos (${NUESTRA_CULPA[codigo]}).`;
-  }
-  if (status === 404) {
-    return 'La compra de tarjetas no está disponible en este momento. Escríbenos por WhatsApp.';
-  }
-  return 'No pudimos iniciar el pago. Intenta de nuevo en un momento.';
-};
-
-// Pantalla de gracias: se entra aquí de vuelta de MercadoPago. El código solo
-// existe cuando el webhook confirmó el cobro, y eso puede tardar unos
-// segundos, así que se consulta hasta que aparezca.
-function Gracias({ id }) {
-  const [estado, setEstado] = useState(null);
-  const [falló, setFalló] = useState(false);
-  const intentos = useRef(0);
-
-  useEffect(() => {
-    let vivo = true;
-    let timer;
-    async function consultar() {
-      try {
-        const res = await fetch(`${API_OPS}/tarjeta-estado?id=${encodeURIComponent(id)}`);
-        if (!res.ok) { if (vivo) setFalló(true); return; }
-        const data = await res.json();
-        if (!vivo) return;
-        setEstado(data);
-        intentos.current += 1;
-        if (data.estado === 'pendiente_pago' && intentos.current < MAX_POLLS) {
-          timer = setTimeout(consultar, POLL_MS);
-        }
-      } catch {
-        if (vivo) setFalló(true);
-      }
-    }
-    consultar();
-    return () => { vivo = false; clearTimeout(timer); };
-  }, [id]);
-
-  return (
-    <section className={styles.section}>
-      <div className={styles.container}>
-        <h1 className={styles.title}>Tu tarjeta de regalo</h1>
-        <div className={styles.card}>
-          {falló && <p className={styles.centro}>No encontramos esta compra. Si ya pagaste, escríbenos y la buscamos.</p>}
-          {!falló && !estado && <p className={styles.centro}>Cargando…</p>}
-          {estado?.estado === 'pendiente_pago' && (
-            <>
-              <p className={styles.centro}>Estamos confirmando tu pago. Esto tarda unos segundos.</p>
-              <p className={styles.nota}>
-                Si cierras esta página no pasa nada: en cuanto se confirme, te mandamos
-                el código por correo.
-              </p>
-            </>
-          )}
-          {estado?.codigo && (
-            <>
-              <p className={styles.centro}>
-                ¡Listo! {estado.destinatario ? `La tarjeta de ${estado.destinatario} ` : 'Tu tarjeta '}
-                tiene <strong>{formatMXN(estado.creditos)}</strong> de saldo.
-              </p>
-              <div className={styles.codigo}>{estado.codigo}</div>
-              <p className={styles.nota}>
-                También te lo mandamos por correo. El saldo no caduca y se puede usar en
-                varios pedidos: si sobra, se queda en la tarjeta. Para usarlo, basta con
-                dar el código al agendar o a quien recoja.
-              </p>
-            </>
-          )}
-          {estado && estado.estado !== 'pendiente_pago' && !estado.codigo && (
-            <p className={styles.centro}>Esta tarjeta no está disponible. Escríbenos y la revisamos.</p>
-          )}
-          <p className={styles.centro} style={{ marginTop: 22 }}>
-            <Link to="/">Volver al inicio →</Link>
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
+// Las tarjetas de regalo se pausaron el 9-nov-2026.
+//
+// Esta página se queda en pie, con el aviso, en vez de borrar la ruta: la URL
+// está indexada, se compartió por WhatsApp y hasta hace poco la enlazaba la
+// pantalla de seguimiento del pedido. Quitar la ruta dejaría una página en
+// blanco dentro del sitio, porque no hay ruta de respaldo para lo que no
+// existe, y quien llegara pensaría que algo se rompió.
+//
+// FALTA PONER EL CONTACTO. En el repo no hay ningún teléfono ni correo de
+// atención —los que aparecen son placeholders o variables de entorno— así que
+// no inventé uno aquí. Cuando pongas el de verdad, descomenta el botón de
+// abajo con tu número en formato wa.me (52 + diez dígitos, sin espacios).
+//
+// Cuando se vuelva a prender el producto, el formulario de compra está en el
+// historial: el commit anterior a "Tarjetas de regalo: apagadas".
 export default function TarjetaRegalo() {
-  const [params] = useSearchParams();
-  const idGracias = params.get('id');
-
-  // Viene preseleccionado el paquete de entrada. Antes era el de en medio de
-  // tres; con dos ya no hay medio, y dejar marcado el más caro es empujar.
-  const [precio, setPrecio] = useState(TARJETAS[0].precio);
-  const [compradorNombre, setCompradorNombre] = useState('');
-  const [compradorEmail, setCompradorEmail] = useState('');
-  const [destinatarioNombre, setDestinatarioNombre] = useState('');
-  const [mensaje, setMensaje] = useState('');
-  const [enviando, setEnviando] = useState(false);
-  const [error, setError] = useState('');
-
-
-  if (idGracias) return <Gracias id={idGracias} />;
-
-  const comprar = async () => {
-    if (enviando) return;
-    setError('');
-    if (!compradorEmail.trim()) { setError('Necesitamos tu correo para mandarte el código.'); return; }
-    setEnviando(true);
-    try {
-      const res = await fetch(`${API_OPS}/comprar-tarjeta`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ precio, compradorNombre, compradorEmail, destinatarioNombre, mensaje }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.init_point) {
-        setError(mensajeDeError(data.error, res.status));
-        setEnviando(false);
-        return;
-      }
-      window.location.href = data.init_point;
-    } catch {
-      setError('No pudimos iniciar el pago. Intenta de nuevo en un momento.');
-      setEnviando(false);
-    }
-  };
-
   return (
-    <section className={styles.section}>
-      <div className={styles.container}>
-        <h1 className={styles.title}>Tarjetas de regalo</h1>
-        <p className={styles.intro}>
-          Regala ropa limpia. El saldo no caduca, se puede usar en varios pedidos
-          y siempre vale más de lo que pagas.
-        </p>
+    <>
+      <PageHero
+        badge="Tarjetas de regalo"
+        title="No disponibles por ahora"
+        text="Pausamos la venta de tarjetas de regalo mientras le damos una vuelta al programa. Volverán."
+      />
 
-        <div className={styles.card}>
-          <div className={styles.paquetes}>
-            {TARJETAS.map((t) => (
-              <button
-                key={t.precio}
-                type="button"
-                onClick={() => setPrecio(t.precio)}
-                className={`${styles.paquete} ${precio === t.precio ? styles.paqueteSel : ''}`}
-              >
-                <div className={styles.paquetePrecio}>{formatMXN(t.precio)}</div>
-                <div className={styles.paqueteSaldo}>{formatMXN(t.creditos)} de saldo</div>
-                <div className={styles.paqueteBono}>+{porcentajeBono(t)}% de regalo</div>
-              </button>
-            ))}
-          </div>
-
-          <label className={styles.label}>Tu correo</label>
-          <input
-            type="email"
-            className={styles.input}
-            value={compradorEmail}
-            onChange={(e) => setCompradorEmail(e.target.value)}
-            placeholder="Ahí te mandamos el código"
-          />
-
-          <label className={styles.label}>Tu nombre (opcional)</label>
-          <input
-            type="text"
-            className={styles.input}
-            value={compradorNombre}
-            onChange={(e) => setCompradorNombre(e.target.value)}
-            placeholder="Para saber de quién es el regalo"
-          />
-
-          <label className={styles.label}>¿Para quién es? (opcional)</label>
-          <input
-            type="text"
-            className={styles.input}
-            value={destinatarioNombre}
-            onChange={(e) => setDestinatarioNombre(e.target.value)}
-            placeholder="Nombre de quien la recibe"
-          />
-
-          <label className={styles.label}>Mensaje (opcional)</label>
-          <input
-            type="text"
-            className={styles.input}
-            maxLength={280}
-            value={mensaje}
-            onChange={(e) => setMensaje(e.target.value)}
-            placeholder="Va en el correo con el código"
-          />
-
-          <button
-            className={`${styles.boton} ${enviando ? styles.botonOff : ''}`}
-            onClick={comprar}
-            disabled={enviando}
-          >
-            {enviando ? 'Llevándote al pago…' : `Comprar por ${formatMXN(precio)}`}
-          </button>
-          {error && <p className={styles.error}>{error}</p>}
-
-          <p className={styles.nota}>
-            El pago es con MercadoPago. En cuanto se confirme te mandamos el código
-            por correo, y también lo ves aquí mismo. Se canjea al agendar o con quien
-            recoja tu pedido.
+      <section style={{ maxWidth: 560, margin: '0 auto', padding: '0 20px 72px' }}>
+        <div style={{
+          background: '#fff', border: '1.5px dashed #D9CDB8', borderRadius: 16,
+          padding: '22px 24px', lineHeight: 1.6,
+        }}>
+          <p style={{ margin: 0, fontSize: 15, color: '#26201A', fontWeight: 600 }}>
+            ¿Ya tienes una tarjeta comprada?
           </p>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: '#6A5F52' }}>
+            Tu saldo sigue registrado. Escríbenos con tu código y lo
+            resolvemos contigo.
+          </p>
+          {/* <a
+            href="https://wa.me/52XXXXXXXXXX"
+            style={{
+              display: 'inline-block', marginTop: 16, background: '#26201A',
+              color: '#ED7A5E', borderRadius: 10, padding: '11px 20px',
+              fontWeight: 700, fontSize: 14, textDecoration: 'none',
+            }}
+          >
+            Escribir por WhatsApp
+          </a> */}
         </div>
-      </div>
-    </section>
+
+        <p style={{ marginTop: 28, fontSize: 14, color: '#6A5F52', textAlign: 'center' }}>
+          Mientras tanto,{' '}
+          <Link to="/membresia" style={{ color: '#26201A', fontWeight: 700 }}>
+            la membresía
+          </Link>{' '}
+          da descuento en todas tus compras, o puedes{' '}
+          <Link to="/agendar" style={{ color: '#26201A', fontWeight: 700 }}>
+            agendar una recolección
+          </Link>.
+        </p>
+      </section>
+    </>
   );
 }
