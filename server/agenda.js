@@ -14,9 +14,25 @@
 // los dos lados son las mismas a propósito, para que la copia vieja falle.
 
 // ─── Ventanas ─────────────────────────────────────────────────────────────
-// Toda recolección se hace con Uber Direct, en ventanas de 2 horas iguales
-// para cualquier zona: domingo a jueves de 10am a 10pm, y viernes solo de
-// 10am a 2pm. Sábado no hay servicio.
+//
+// Hay DOS transportes y no se mezclan:
+//
+//   Uber Direct       9am a 9pm, en ventanas de 2 horas, domingo a jueves,
+//                     en TODAS las zonas. La hora es una preferencia: la
+//                     recolección la hace un tercero.
+//   Transporte propio 8pm a 10pm, domingo, lunes, miércoles y jueves, SOLO
+//                     en las zonas A y B. Ahí la ventana sí es un
+//                     compromiso, porque va nuestro equipo.
+//
+// Viernes y sábado no hay servicio.
+//
+// ESTO CAMBIÓ EL 10-NOV-2026. Antes el calendario ofrecía de 10am a 10pm de
+// domingo a jueves y medio viernes, y la ventana de 8 a 10pm salía de la
+// misma lista que las demás, marcada como "propia" cuando tocaba. Eran las
+// reglas que venían de la pantalla de agenda, y no eran las que el equipo
+// usa en WhatsApp: ahí se ofrece de 9 a 9 y el viernes no se trabaja. Ahora
+// la ventana nocturna es una ventana APARTE, que solo existe donde de verdad
+// existe, en vez de una excepción escondida dentro de la lista general.
 export const DIAS_HORIZONTE = 6;
 export const HORAS_ANTICIPACION = 2;
 
@@ -26,32 +42,32 @@ function rangosDe(desde, hasta, paso = 2) {
   return r;
 }
 
-export const DIAS_SEMANA = [0, 1, 2, 3, 4]; // domingo a jueves
-export const DIA_VIERNES = 5;
-const RANGOS_SEMANA = rangosDe(10, 22);  // 10-12, 12-2, ... 8-10pm
-const RANGOS_VIERNES = rangosDe(10, 14); // 10-12, 12-2
+// Domingo a jueves.
+export const DIAS_SERVICIO = [0, 1, 2, 3, 4];
 
-// La única excepción: en A y B la ventana de 8 a 10pm la cubre nuestro propio
-// equipo, los mismos días que ya la cubría la ruta de la tarde. En esa
-// ventana el horario sí es un compromiso, no una preferencia.
+const RANGOS_UBER = rangosDe(9, 21); // 9-11, 11-1, ... 7-9pm
+
 export const ZONAS_TRANSPORTE_PROPIO = ['A', 'B'];
 export const DIAS_TRANSPORTE_PROPIO = [0, 1, 3, 4]; // domingo, lunes, miércoles, jueves
-const VENTANA_PROPIA = { start: 20, end: 22 };
+export const VENTANA_PROPIA = { start: 20, end: 22 };
 
-const esVentanaNocturna = (r) => r.start === VENTANA_PROPIA.start && r.end === VENTANA_PROPIA.end;
+const esVentanaNocturna = (r) =>
+  r?.start === VENTANA_PROPIA.start && r?.end === VENTANA_PROPIA.end;
 
 export const esTransportePropio = (zona, diaSemana, rango) =>
   ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
   DIAS_TRANSPORTE_PROPIO.includes(diaSemana) &&
   esVentanaNocturna(rango);
 
-// En A y B la ventana de 8 a 10pm es nuestra, así que los días sin ruta de
-// la tarde (el martes) no se ofrece en vez de caer a Uber Direct de noche.
-// En las demás zonas esa ventana siempre fue de Uber Direct y no cambia.
-export const ventanaDisponible = (zona, diaSemana, rango) =>
-  !(ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
-    esVentanaNocturna(rango) &&
-    !DIAS_TRANSPORTE_PROPIO.includes(diaSemana));
+// ¿Esta ventana existe para esta zona y este día? Lo usa el servidor para no
+// creerle al navegador ni al bot: los dos mandan una etiqueta de hora, y sin
+// esto cualquiera podría pedir un viernes o la ventana nocturna en una zona
+// donde no la hay.
+export const ventanaDisponible = (zona, diaSemana, rango) => {
+  if (!DIAS_SERVICIO.includes(diaSemana)) return false;
+  if (esVentanaNocturna(rango)) return esTransportePropio(zona, diaSemana, rango);
+  return RANGOS_UBER.some((r) => r.start === rango?.start && r.end === rango?.end);
+};
 
 // ─── Zonas ────────────────────────────────────────────────────────────────
 // A partir de cuánto el transporte es gratis, por zona. No bloquea el
@@ -139,16 +155,17 @@ export function aISO(fecha) {
 // ofrecen; para cualquier día que no sea hoy, todas quedan muy por encima de
 // ese corte, así que esto en la práctica solo filtra lo que queda de hoy.
 export function horasDeDia(fecha, diaSemana, zona, ahora = new Date()) {
-  if (!zona) return [];
-  let rangos;
-  if (DIAS_SEMANA.includes(diaSemana)) rangos = RANGOS_SEMANA;
-  else if (diaSemana === DIA_VIERNES) rangos = RANGOS_VIERNES;
-  else return []; // sábado
+  if (!zona || !DIAS_SERVICIO.includes(diaSemana)) return [];
+
+  const rangos = [...RANGOS_UBER];
+  // La nocturna se agrega donde existe. Se traslapa con la de 7 a 9pm a
+  // propósito: son dos transportes distintos, no dos horarios del mismo.
+  if (esTransportePropio(zona, diaSemana, VENTANA_PROPIA)) rangos.push({ ...VENTANA_PROPIA });
+  rangos.sort((a, b) => a.start - b.start);
 
   const corte = new Date(ahora.getTime() + HORAS_ANTICIPACION * 3600000);
   return rangos
     .filter((rango) => {
-      if (!ventanaDisponible(zona, diaSemana, rango)) return false;
       const inicio = new Date(fecha);
       inicio.setHours(rango.start, 0, 0, 0);
       return inicio >= corte;

@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { textoPago } from './pago.js';
 
 const COLOR_BG = '#dcf5f6';
 const COLOR_CARD = '#ffffff';
@@ -47,10 +48,14 @@ function replyTo() {
   return buzon || undefined;
 }
 
-function pagoLabelFor(booking) {
-  return booking.pago_status === 'pagado'
-    ? `Depósito pagado en línea${booking.deposito_monto ? ` ($${booking.deposito_monto} MXN)` : ''}`
-    : 'Pago a la entrega (tarjeta o efectivo)';
+// Qué formas de pago aplican. Depende del transporte: con Uber Direct no hay
+// quién reciba efectivo ni quién pase una terminal, y el correo decía
+// "tarjeta o efectivo" en todos los casos. Ver server/pago.js.
+function pagoLabelFor(booking, transporte) {
+  if (booking.pago_status === 'pagado') {
+    return `Depósito pagado en línea${booking.deposito_monto ? ` ($${booking.deposito_monto} MXN)` : ''}`;
+  }
+  return textoPago(transporte);
 }
 
 function renderRows(rows) {
@@ -104,7 +109,7 @@ function renderEmailShell({ eyebrow, heading, intro, rows, footerNote }) {
   `;
 }
 
-export function formatBookingHtml(booking) {
+export function formatBookingHtml(booking, transporte) {
   return renderEmailShell({
     eyebrow: 'Recolección agendada',
     heading: '¡Tu recolección está agendada!',
@@ -114,13 +119,13 @@ export function formatBookingHtml(booking) {
       { label: 'Dirección', value: booking.direccion },
       { label: 'Teléfono', value: booking.telefono },
       { label: 'Horario', value: `${booking.dia_label}, ${booking.hora_label}` },
-      { label: 'Pago', value: pagoLabelFor(booking) },
+      { label: 'Pago', value: pagoLabelFor(booking, transporte) },
     ],
     footerNote: 'La Laundry — lavandería a domicilio.',
   });
 }
 
-export async function sendBookingConfirmationEmail(booking) {
+export async function sendBookingConfirmationEmail(booking, { transporte } = {}) {
   if (!booking.email) return { enviado: false, motivo: SIN_CORREO };
 
   const resend = getResend();
@@ -133,7 +138,7 @@ export async function sendBookingConfirmationEmail(booking) {
     replyTo: replyTo(),
     to: booking.email,
     subject: '¡Tu recolección con La Laundry está agendada!',
-    html: formatBookingHtml(booking),
+    html: formatBookingHtml(booking, transporte),
   }, 'confirmation');
 }
 
@@ -230,7 +235,7 @@ export function formatOwnerNotificationHtml(booking) {
       { label: 'Correo del cliente', value: booking.email || 'No proporcionado' },
       { label: 'Horario', value: `${booking.dia_label}, ${booking.hora_label}` },
       { label: 'Detalles', value: booking.detalles || 'Ninguno' },
-      { label: 'Pago', value: pagoLabelFor(booking) },
+      { label: 'Pago', value: pagoLabelFor(booking, transporte) },
     ],
     footerNote: 'La Laundry — panel interno.',
   });
@@ -270,7 +275,7 @@ export async function avisarChatEsperando({ conversacionId, motivo, ultimoMensaj
   }, 'aviso de chat');
 }
 
-export async function sendOwnerBookingNotification(booking) {
+export async function sendOwnerBookingNotification(booking, { transporte } = {}) {
   const ownerEmails = (process.env.OWNER_NOTIFICATION_EMAIL || '')
     .split(',')
     .map((e) => e.trim())

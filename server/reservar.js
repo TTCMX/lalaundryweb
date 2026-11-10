@@ -34,11 +34,16 @@ export async function crearReserva(datos = {}) {
     return { ok: false, error: 'faltan-datos', http: 400 };
   }
 
-  // El correo también se valida aquí y no solo en el formulario: este camino
-  // es público y el formulario no es la única forma de llegar. Una dirección
-  // mal escrita deja la reserva sin confirmación y sin avisos.
+  // EL CORREO YA NO ES OBLIGATORIO. Lo era, y en el chat costaba
+  // conversaciones: por WhatsApp el equipo nunca lo pide y nadie se queda sin
+  // recolección por eso. Una reserva sin correo se queda sin confirmación
+  // automática —el equipo la ve en la bandeja y en operaciones— y eso es
+  // mejor que no tener la reserva.
+  //
+  // Lo que sí se sigue validando es el correo QUE SÍ DIERON: uno mal escrito
+  // es peor que ninguno, porque deja creer que la confirmación va en camino.
   const correo = limpiarCorreo(email);
-  if (!correoValido(correo)) {
+  if (correo && !correoValido(correo)) {
     return { ok: false, error: 'correo-invalido', http: 400 };
   }
 
@@ -56,7 +61,7 @@ export async function crearReserva(datos = {}) {
     direccion,
     cp: cp || null,
     telefono: normalizePhone(telefono),
-    email: correo,
+    email: correo || null,
     dia_label: diaLabel,
     hora_label: horaLabel,
     fecha_recoleccion: fecha || null,
@@ -121,7 +126,7 @@ export async function crearReserva(datos = {}) {
   // marcaba el éxito, así que una reserva sin correo, una con la llave
   // ausente y una que Resend rechazó quedaban idénticas en la base y el único
   // rastro era un console.error que nadie lee.
-  const resultadoCorreo = await sendBookingConfirmationEmail(booking);
+  const resultadoCorreo = await sendBookingConfirmationEmail(booking, { transporte });
   await supabase
     .from('bookings')
     .update({
@@ -138,7 +143,7 @@ export async function crearReserva(datos = {}) {
     await avisarFalloDeCorreo(booking, resultadoCorreo);
   }
 
-  await sendOwnerBookingNotification(booking);
+  await sendOwnerBookingNotification(booking, { transporte });
 
   // Nunca dejes que un tropiezo aquí (operaciones caída, columnas que faltan)
   // convierta una reserva ya confirmada en un error para el cliente.

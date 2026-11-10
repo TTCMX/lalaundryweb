@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/cors.test.mjs && node test/rateLimit.test.mjs && node test/siteUrl.test.mjs && node test/preferencia.test.mjs && node test/correo.test.mjs && node test/envioCorreo.test.mjs && node test/agenda.test.mjs && node test/preciosPublicos.test.mjs && node test/catalogo.test.mjs && node test/bot.test.mjs"
+    "test": "node test/importes.test.mjs && node test/cors.test.mjs && node test/rateLimit.test.mjs && node test/siteUrl.test.mjs && node test/preferencia.test.mjs && node test/correo.test.mjs && node test/envioCorreo.test.mjs && node test/agenda.test.mjs && node test/pago.test.mjs && node test/preciosPublicos.test.mjs && node test/catalogo.test.mjs && node test/bot.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.7.0",

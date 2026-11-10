@@ -7,8 +7,19 @@ import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '.
 import styles from './Agendar.module.css';
 import { correoValido, sugerenciaCorreo, limpiarCorreo } from '../../server/correo.js';
 import { WHATSAPP_LEGIBLE, whatsappURL } from '../lib/contacto.js';
+// Cómo se paga depende del transporte de la ventana elegida: con Uber Direct
+// no hay quién reciba efectivo. Ver server/pago.js.
+import { avisoPago, textoPago } from '../../server/pago.js';
 import {
   diasDisponibles, formatoPesos, minimoDeZona, hayTintoreria,
+  // ESTE FALTABA, Y ERA EL CRASH. Se usa en el banner de cobertura, que solo
+  // se dibuja cuando el código postal sale cubierto: o sea, justo al validar
+  // la dirección. Sin el import, React lanza ReferenceError a media pintada,
+  // desmonta el árbol y la pantalla se queda en el color del fondo. Quedó
+  // suelto cuando las reglas de agenda salieron de este archivo a
+  // server/agenda.js, y no se notó porque no hay linter en este proyecto y
+  // el único camino que lo toca es el feliz: dirección válida, zona cubierta.
+  ZONAS_TRANSPORTE_PROPIO, costoTransporteDeZona,
   MENSAJE_SIN_TINTORERIA, MENSAJE_UBER_DIRECT,
 } from '../../server/agenda.js';
 
@@ -619,8 +630,12 @@ export default function Agendar() {
                     {MENSAJE_UBER_DIRECT}
                     {ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
                       ' Las recolecciones de 8 a 10pm las hace nuestro propio equipo.'}
+                    {/* NO es un pedido mínimo, y decirlo así espanta: un
+                        pedido más chico se acepta igual, nada más paga
+                        transporte. Es el monto a partir del cual el
+                        transporte va gratis. */}
                     {minimoDeZona(zona) &&
-                      ` Pedido mínimo sugerido en tu zona: ${formatoPesos(minimoDeZona(zona))}.`}
+                      ` Transporte gratis desde ${formatoPesos(minimoDeZona(zona))} en tu zona; debajo de eso cuesta ${formatoPesos(costoTransporteDeZona(zona))}.`}
                   </span>
                 </div>
               )}
@@ -847,8 +862,7 @@ export default function Agendar() {
                 rows={6}
               />
               <p className={styles.hint} style={{ marginBottom: 0 }}>
-                No se cobra nada por adelantado: pagas el total a la entrega, con tarjeta o
-                efectivo.
+                No se cobra nada por adelantado. {avisoPago(HORAS[horaSel]?.propio ? 'propio' : 'uber_direct')}
               </p>
               {/* El error se muestra aquí porque este paso es el que confirma. */}
               {submitError && <p className={styles.errorMessage}>{submitError}</p>}
@@ -885,7 +899,9 @@ export default function Agendar() {
                 </div>
                 <div className={styles.resumenRow}>
                   <span className={styles.resumenLabel}>Pago</span>
-                  <span className={styles.resumenValue}>Pago a la entrega</span>
+                  <span className={styles.resumenValue}>
+                    {textoPago(HORAS[horaSel]?.propio ? 'propio' : 'uber_direct')}
+                  </span>
                 </div>
               </div>
               <InvitacionMembresia telefono={telefono} />

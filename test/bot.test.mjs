@@ -289,12 +289,30 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
     t('la conversación queda con quién agendó',
       conversacion.reserva === 'bk_1' && conversacion.cliente.email === 'kath@ejemplo.com');
     t('y se le dice al cliente qué día quedó', r.decir_al_cliente.includes(ventana));
+    // El pago depende del transporte y hay que decirlo al confirmar: con
+    // Uber Direct el repartidor no cobra nada.
+    t('se dice cómo se paga', r.formas_de_pago.length > 0);
+    t('y en zona C a las 9am es Uber Direct, así que no hay efectivo',
+      r.transporte === 'uber_direct' && !r.formas_de_pago.includes('efectivo'));
+    t('el texto para el cliente lo explica', /transferencia|link de pago/i.test(r.decir_al_cliente));
   }
 
   t('sin teléfono bueno no agenda',
     (await correrHerramienta('agendar_recoleccion', { ...datos, telefono: 'hola' },
       { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).agendado === false);
-  t('con un correo inválido tampoco, que es donde llega la confirmación',
+  // El correo NO bloquea: por WhatsApp nadie lo pide y nadie se queda sin
+  // recolección por eso. Lo que sí se rechaza es uno mal escrito, que es
+  // peor que ninguno porque deja creer que la confirmación va en camino.
+  {
+    const r1 = reservaFalsa();
+    const r = await correrHerramienta('agendar_recoleccion', { ...datos, email: null },
+      { supabase: supabaseFalso(CP), reservar: r1.fn }, lunes);
+    t('sin correo SÍ agenda', r.agendado === true);
+    t('y la reserva va sin correo', !r1.llamadas[0].email);
+    t('pero se le avisa al bot que no hay confirmación automática',
+      /confirm/i.test(r.decir_al_cliente));
+  }
+  t('un correo mal escrito sí se rechaza',
     (await correrHerramienta('agendar_recoleccion', { ...datos, email: 'kath@@ejemplo' },
       { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).falta === 'email');
   t('ni con "mi casa" por domicilio',

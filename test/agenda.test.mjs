@@ -23,21 +23,28 @@ const diaDe = (f) => f.getDay();
 t('la fecha de prueba es lunes', diaDe(lunes8am) === 1);
 
 // ── Ventanas de un día normal ─────────────────────────────────────────────
+// Uber Direct: de 9am a 9pm, en todas las zonas, domingo a jueves.
+const lunes6am = new Date(2026, 10, 9, 6, 0, 0);
 {
-  const h = horasDeDia(lunes8am, 1, 'C', lunes8am);
+  const h = horasDeDia(lunes6am, 1, 'C', lunes6am);
   t('lunes en zona C ofrece seis ventanas de 2 horas', h.length === 6);
-  t('la primera es 10am-12pm', h[0].label === '10am-12pm');
-  t('la última es 8pm-10pm', h[h.length - 1].label === '8pm-10pm');
+  t('la primera es 9am-11am', h[0].label === '9am-11am');
+  t('la última termina a las 9pm', h[h.length - 1].label === '7pm-9pm');
   t('en C ninguna es de transporte propio', h.every((x) => x.propio === false));
+  t('y en C NO hay ventana nocturna: ésa es solo de A y B',
+    !h.some((x) => x.label === '8pm-10pm'));
 }
 
-// ── Viernes: solo mañana ──────────────────────────────────────────────────
+// ── Viernes: no hay servicio ──────────────────────────────────────────────
+// Lo hubo —media mañana— hasta el 10-nov-2026. Se quitó porque el equipo no
+// trabaja viernes, y el calendario lo seguía ofreciendo.
 {
   const viernes = new Date(2026, 10, 13, 8, 0, 0);
   t('la fecha es viernes', diaDe(viernes) === 5);
-  const h = horasDeDia(viernes, 5, 'C', viernes);
-  t('el viernes solo ofrece dos ventanas', h.length === 2);
-  t('hasta las 2pm', h[h.length - 1].label === '12pm-2pm');
+  t('el viernes no ofrece nada', horasDeDia(viernes, 5, 'C', viernes).length === 0);
+  t('tampoco en A', horasDeDia(viernes, 5, 'A', viernes).length === 0);
+  t('y no aparece en el calendario',
+    diasDisponibles('C', lunes8am).every((d) => !/viernes/i.test(d.fullLabel)));
 }
 
 // ── Sábado: no hay servicio ───────────────────────────────────────────────
@@ -60,17 +67,18 @@ t('la fecha de prueba es lunes', diaDe(lunes8am) === 1);
 {
   const martes = new Date(2026, 10, 10, 8, 0, 0);
   t('la fecha es martes', diaDe(martes) === 2);
-  const h = horasDeDia(martes, 2, 'A', martes);
+  const h = horasDeDia(martes, 2, 'A', new Date(2026, 10, 10, 6, 0, 0));
   t('martes en A NO ofrece la nocturna', !h.some((x) => x.label === '8pm-10pm'));
-  t('pero sí el resto del día', h.length === 5);
+  t('pero sí el resto del día', h.length === 6);
 }
 {
-  const martes = new Date(2026, 10, 10, 8, 0, 0);
-  const h = horasDeDia(martes, 2, 'C', martes);
-  t('martes en C sí ofrece la nocturna: ahí siempre fue de Uber',
-    h.some((x) => x.label === '8pm-10pm'));
-  t('y no es de transporte propio',
-    h.find((x) => x.label === '8pm-10pm').propio === false);
+  // La nocturna se traslapa con la de 7 a 9pm a propósito: son dos
+  // transportes distintos, no dos horarios del mismo.
+  const h = horasDeDia(lunes6am, 1, 'A', lunes6am);
+  t('en A el lunes hay siete ventanas: las seis de Uber y la nuestra',
+    h.length === 7);
+  t('la de 7 a 9 es de Uber', h.find((x) => x.label === '7pm-9pm').propio === false);
+  t('y la de 8 a 10 es nuestra', h.find((x) => x.label === '8pm-10pm').propio === true);
 }
 t('la nocturna es propia solo en A y B',
   esTransportePropio('A', 1, { start: 20, end: 22 }) === true &&
@@ -78,10 +86,17 @@ t('la nocturna es propia solo en A y B',
   esTransportePropio('C', 1, { start: 20, end: 22 }) === false);
 t('y solo en la ventana de 8 a 10',
   esTransportePropio('A', 1, { start: 10, end: 12 }) === false);
-t('ventanaDisponible solo esconde la nocturna de A y B en días sin ruta',
+t('la nocturna solo existe en A y B, y solo los días con ruta',
   ventanaDisponible('A', 2, { start: 20, end: 22 }) === false &&
   ventanaDisponible('A', 1, { start: 20, end: 22 }) === true &&
-  ventanaDisponible('C', 2, { start: 20, end: 22 }) === true);
+  ventanaDisponible('C', 1, { start: 20, end: 22 }) === false);
+t('una ventana de Uber vale en cualquier zona',
+  ventanaDisponible('G', 1, { start: 9, end: 11 }) === true);
+t('pero no en viernes ni sábado',
+  ventanaDisponible('A', 5, { start: 9, end: 11 }) === false &&
+  ventanaDisponible('A', 6, { start: 9, end: 11 }) === false);
+t('ni una ventana inventada',
+  ventanaDisponible('A', 1, { start: 3, end: 5 }) === false);
 
 // ── Anticipación mínima ───────────────────────────────────────────────────
 // Lo que falta menos de dos horas no se ofrece: no da tiempo de despachar.
@@ -92,25 +107,24 @@ t('ventanaDisponible solo esconde la nocturna de A y B en días sin ruta',
 {
   const lunes1pm = new Date(2026, 10, 9, 13, 0, 0);
   const h = horasDeDia(lunes1pm, 1, 'C', lunes1pm);
-  t('a la 1pm ya no se ofrece la ventana de 12-2', !h.some((x) => x.label === '12pm-2pm'));
-  t('ni la de 10-12', !h.some((x) => x.label === '10am-12pm'));
-  t('la de 2pm TAMPOCO: empieza en una hora, no en dos',
-    !h.some((x) => x.label === '2pm-4pm'));
-  t('la primera ofrecida es la de 4pm', h[0].label === '4pm-6pm');
+  t('a la 1pm ya no se ofrece la ventana de 11-1', !h.some((x) => x.label === '11am-1pm'));
+  t('ni la de 9-11', !h.some((x) => x.label === '9am-11am'));
+  t('la de 1pm TAMPOCO: ya empezó', !h.some((x) => x.label === '1pm-3pm'));
+  t('la primera ofrecida es la de 3pm', h[0].label === '3pm-5pm');
 }
 {
-  // Justo en el límite: a las 12 en punto, la ventana de 2pm empieza
+  // Justo en el límite: a las 11 en punto, la ventana de 1pm empieza
   // exactamente dos horas después y sí entra.
-  const lunes12 = new Date(2026, 10, 9, 12, 0, 0);
-  const h = horasDeDia(lunes12, 1, 'C', lunes12);
-  t('a las 12 en punto, la de 2pm cae justo en el límite y sí se ofrece',
-    h[0].label === '2pm-4pm');
+  const lunes11 = new Date(2026, 10, 9, 11, 0, 0);
+  const h = horasDeDia(lunes11, 1, 'C', lunes11);
+  t('a las 11 en punto, la de 1pm cae justo en el límite y sí se ofrece',
+    h[0].label === '1pm-3pm');
 }
 {
   // Un minuto después, ya no.
-  const lunes1201 = new Date(2026, 10, 9, 12, 1, 0);
-  const h = horasDeDia(lunes1201, 1, 'C', lunes1201);
-  t('un minuto más tarde, ya no', h[0].label === '4pm-6pm');
+  const lunes1101 = new Date(2026, 10, 9, 11, 1, 0);
+  const h = horasDeDia(lunes1101, 1, 'C', lunes1101);
+  t('un minuto más tarde, ya no', h[0].label === '3pm-5pm');
 }
 {
   const lunes9pm = new Date(2026, 10, 9, 21, 0, 0);
@@ -149,26 +163,28 @@ t('pero las siete reales sí',
 t('y no importan las mayúsculas ni los espacios',
   diasDisponibles(' c ', lunes8am).length > 0);
 t('un horario en una zona inventada no es válido',
-  esHorarioValido({ zona: 'Z', isoDate: '2026-11-09', horaLabel: '2pm-4pm' }, lunes8am) === false);
+  esHorarioValido({ zona: 'Z', isoDate: '2026-11-09', horaLabel: '1pm-3pm' }, lunes8am) === false);
 
 // ── Validación del lado del servidor ──────────────────────────────────────
 // El navegador manda día y etiqueta; sin esto se podría pedir un sábado.
 t('un horario del calendario es válido',
-  esHorarioValido({ zona: 'C', isoDate: '2026-11-09', horaLabel: '2pm-4pm' }, lunes8am) === true);
+  esHorarioValido({ zona: 'C', isoDate: '2026-11-09', horaLabel: '1pm-3pm' }, lunes8am) === true);
 t('un sábado no es válido',
-  esHorarioValido({ zona: 'C', isoDate: '2026-11-14', horaLabel: '10am-12pm' }, lunes8am) === false);
+  esHorarioValido({ zona: 'C', isoDate: '2026-11-14', horaLabel: '9am-11am' }, lunes8am) === false);
+t('un viernes tampoco',
+  esHorarioValido({ zona: 'C', isoDate: '2026-11-13', horaLabel: '9am-11am' }, lunes8am) === false);
 t('la nocturna en A un martes no es válida',
   esHorarioValido({ zona: 'A', isoDate: '2026-11-10', horaLabel: '8pm-10pm' }, lunes8am) === false);
-t('pero en C sí',
-  esHorarioValido({ zona: 'C', isoDate: '2026-11-10', horaLabel: '8pm-10pm' }, lunes8am) === true);
+t('y en C no es válida ningún día: la nocturna es solo de A y B',
+  esHorarioValido({ zona: 'C', isoDate: '2026-11-09', horaLabel: '8pm-10pm' }, lunes8am) === false);
 t('una etiqueta inventada no pasa',
   esHorarioValido({ zona: 'C', isoDate: '2026-11-09', horaLabel: '3am-5am' }, lunes8am) === false);
 t('una fecha fuera del horizonte no pasa',
   esHorarioValido({ zona: 'C', isoDate: '2027-01-01', horaLabel: '10am-12pm' }, lunes8am) === false);
 t('sin zona nada pasa',
-  esHorarioValido({ zona: null, isoDate: '2026-11-09', horaLabel: '2pm-4pm' }, lunes8am) === false);
+  esHorarioValido({ zona: null, isoDate: '2026-11-09', horaLabel: '1pm-3pm' }, lunes8am) === false);
 t('una fecha pasada no pasa',
-  esHorarioValido({ zona: 'C', isoDate: '2026-11-01', horaLabel: '2pm-4pm' }, lunes8am) === false);
+  esHorarioValido({ zona: 'C', isoDate: '2026-11-01', horaLabel: '1pm-3pm' }, lunes8am) === false);
 
 // ── Zonas ─────────────────────────────────────────────────────────────────
 t('F y G no tienen tintorería', !hayTintoreria('F') && !hayTintoreria('G'));

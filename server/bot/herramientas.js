@@ -21,6 +21,7 @@ import { CATALOGO, NOTAS_CATEGORIA, buscarEnCatalogo, precioTexto, porCategoria 
 import { totalTenis, transporteTenis, resumenTenis, pesos } from '../precios-publicos.js';
 import { normalizePhone } from '../phone.js';
 import { correoValido, limpiarCorreo } from '../correo.js';
+import { formasDePago, avisoPago } from '../pago.js';
 import { crearReserva } from '../reservar.js';
 
 export const URL_MI_ORDEN = 'https://app.lalaundry.xyz/miorden';
@@ -123,7 +124,10 @@ export const DEFINICIONES = [
       properties: {
         nombre: { type: 'string', description: 'Nombre de quien recibe.' },
         telefono: { type: 'string', description: 'Teléfono de contacto, 10 dígitos.' },
-        email: { type: 'string', description: 'Correo donde llega la confirmación. Es obligatorio.' },
+        email: {
+          type: ['string', 'null'],
+          description: 'Correo donde llega la confirmación. Pídelo, pero si no lo quiere dar manda null y se agenda igual.',
+        },
         cp: { type: 'string', description: 'Código postal, el mismo que verificaste.' },
         direccion: {
           type: 'string',
@@ -415,9 +419,12 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   const tel = normalizePhone(telefono);
   if (!tel) return { agendado: false, falta: 'telefono', motivo: 'El teléfono no se ve bien. Pídelo otra vez, a 10 dígitos.' };
 
+  // El correo NO bloquea. Si lo dieron, tiene que estar bien escrito: uno
+  // mal escrito es peor que ninguno, porque deja creer que la confirmación
+  // va en camino.
   const correo = limpiarCorreo(email);
-  if (!correoValido(correo)) {
-    return { agendado: false, falta: 'email', motivo: 'Ese correo no es válido. Sin un correo bueno no le llega la confirmación.' };
+  if (correo && !correoValido(correo)) {
+    return { agendado: false, falta: 'email', motivo: 'Ese correo no se ve bien escrito. Pídeselo otra vez, o agenda sin él.' };
   }
 
   if (!String(nombre || '').trim()) {
@@ -462,6 +469,7 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
 
   const hora = dia.horas.find((h) => h.label === ventana);
   const propio = esTransportePropio(zona, dia.weekdayIndex, hora);
+  const transporte = propio ? 'propio' : 'uber_direct';
 
   // Casi toda recolección la hace Uber Direct, no nuestra flota: se marca en
   // las notas junto con la ventana elegida, porque ahí el horario es una
@@ -482,7 +490,7 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     horaLabel: ventana,
     fecha: dia.isoDate,
     detalles: notas,
-    transporte: propio ? 'propio' : 'uber_direct',
+    transporte,
     origen: 'chat',
   });
 
@@ -506,12 +514,19 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     reserva: r.id,
     dia: dia.fullLabel,
     ventana,
-    confirmacion_por_correo: correo,
-    decir_al_cliente:
-      `Listo: ${dia.fullLabel}, ${ventana}. Le llega la confirmación a ${correo}. ` +
-      (propio
+    transporte,
+    formas_de_pago: formasDePago(transporte),
+    confirmacion_por_correo: correo || null,
+    decir_al_cliente: [
+      `Listo: ${dia.fullLabel}, ${ventana}.`,
+      correo
+        ? `Le llega la confirmación a ${correo}.`
+        : 'No dejó correo, así que no hay confirmación automática: confírmaselo tú aquí.',
+      propio
         ? 'Esa ventana la cubre nuestro equipo, así que el horario es un compromiso.'
-        : 'La recolección la hace un tercero, así que la ventana es una preferencia y no una hora exacta.'),
+        : 'La recolección la hace un tercero, así que la ventana es una preferencia y no una hora exacta.',
+      avisoPago(transporte),
+    ].join(' '),
   };
 }
 
