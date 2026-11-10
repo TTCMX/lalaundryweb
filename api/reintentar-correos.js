@@ -12,12 +12,28 @@ import { cronNoAutorizado } from '../server/cors.js';
 // nunca y el cliente se queda esperando un correo que no va a llegar. El
 // equipo tampoco se entera, porque la reserva en sí salió bien.
 //
-// La corre Vercel cada hora (ver "crons" en vercel.json).
+// La corre Vercel UNA VEZ AL DÍA, a las 5:23 de la mañana de CDMX (ver
+// "crons" en vercel.json). Diario y no cada hora porque el plan Hobby de
+// Vercel solo permite tareas diarias: una expresión que corra más seguido
+// no deja ni desplegar el proyecto.
+//
+// Para lo que esto arregla, diario alcanza. El motivo real de que no salga
+// un correo no es un parpadeo de Resend: es el dominio sin verificar o la
+// llave recién rotada, y eso sigue roto hasta que alguien lo toca. Una
+// barrida de madrugada recoge lo de la noche antes de que abra el negocio.
+//
+// SE PUEDE CORRER A MANO para drenar un atraso sin esperar al día
+// siguiente, con el mismo secreto que usa Vercel:
+//
+//   curl -X POST https://lalaundry.xyz/api/reintentar-correos \
+//        -H "Authorization: Bearer $CRON_SECRET"
 
-// Cuántas por corrida. El tope existe porque cada una es una llamada a
-// Resend y la función tiene un límite de tiempo; si hay más, la siguiente
-// corrida sigue donde ésta se quedó.
+// Cuántas por corrida. Con una sola corrida al día, el tope importa: lo que
+// no entre se queda para mañana. Se mandan de a pocas en paralelo para que
+// quepan en el tiempo que la función tiene permitido, en vez de una tras
+// otra.
 const POR_CORRIDA = 25;
+const A_LA_VEZ = 4;
 
 // No se reintenta para siempre. Pasada esta ventana, el problema ya no es
 // temporal: o el correo del cliente está mal escrito o la configuración
@@ -51,7 +67,7 @@ export default async function handler(req, res) {
     let enviados = 0;
     const siguenFallando = [];
 
-    for (const booking of pendientes || []) {
+    const intentar = async (booking) => {
       const resultado = await sendBookingConfirmationEmail(booking);
       await supabase
         .from('bookings')
@@ -64,6 +80,14 @@ export default async function handler(req, res) {
 
       if (resultado.enviado) enviados += 1;
       else if (esFalla(resultado)) siguenFallando.push(booking.id);
+    };
+
+    // De a cuatro: una tras otra, veinticinco envíos se pasan del tiempo que
+    // la función tiene permitido y la corrida se corta a la mitad. Cuatro es
+    // holgado para Resend y deja la barrida en un par de segundos.
+    const lista = pendientes || [];
+    for (let i = 0; i < lista.length; i += A_LA_VEZ) {
+      await Promise.all(lista.slice(i, i + A_LA_VEZ).map(intentar));
     }
 
     // Un solo aviso por corrida y no uno por reserva: si la configuración
