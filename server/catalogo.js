@@ -1,10 +1,14 @@
 // El catálogo de precios que publica el sitio.
 //
-// SOLO DEL PORTAL, a diferencia de precios-publicos.js, que está espejado con
-// la app de operaciones. Esto es la lista pública: lo que anuncia
-// lalaundry.xyz/catalogo y lo que el bot del chat puede cotizar. Lo que de
-// verdad se cobra en caja sale de la tabla `skus` de operaciones, y el diff
-// entre las dos está en laundry-os/supabase/consultas.
+// Es la lista pública: lo que anuncia lalaundry.xyz/catalogo y lo que el bot
+// del chat puede cotizar. Lo que de verdad se cobra en caja sale de la tabla
+// `skus` de operaciones, que es otra base y otro proyecto.
+//
+// ESPEJO: laundry-os/lib/catalogo.js tiene una copia idéntica. Está allá
+// porque la app de operaciones compara esta lista contra `skus` todos los
+// días y avisa si se despegan — sin la copia no tendría contra qué comparar.
+// Si cambia un precio, cambia en las dos; las pruebas de los dos lados son
+// las mismas a propósito, para que la copia vieja falle.
 //
 // POR QUÉ EXISTE: vivía dentro de src/pages/Catalogo.jsx, donde no lo podía
 // leer nadie más. Por eso el bot solo sabía cotizar tenis y todo lo demás
