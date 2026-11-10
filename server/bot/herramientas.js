@@ -521,6 +521,30 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   const propio = esTransportePropio(zona, dia.weekdayIndex, hora);
   const transporte = propio ? 'propio' : 'uber_direct';
 
+  // AGENDAR DOS VECES LO MISMO NO ES AGENDAR DOS VECES.
+  //
+  // El modelo puede emitir dos llamadas a esta herramienta en el mismo turno
+  // —pasa, el SDK permite llamadas en paralelo— y el bucle las corre las dos.
+  // La primera guardaba la reserva y mandaba el correo de confirmación; la
+  // segunda chocaba con el cupo que la primera acababa de ocupar y devolvía
+  // un fallo. El modelo veía el fallo y le decía al cliente que NO había
+  // quedado agendado, con el correo de confirmación ya en su bandeja.
+  //
+  // Decirle a alguien que su reserva falló cuando sí existe es peor que
+  // cualquiera de las dos cosas por separado: nadie va a estar esperando al
+  // repartidor que sí va a llegar.
+  const huella = `${tel}|${dia.isoDate}|${ventana}`;
+  if (conversacion?.reservaHuella === huella) {
+    return {
+      agendado: true,
+      reserva: conversacion.reserva,
+      ya_estaba: true,
+      dia: dia.fullLabel,
+      ventana,
+      decir_al_cliente: `Ya había quedado: ${dia.fullLabel}, ${ventana}. No se agendó dos veces.`,
+    };
+  }
+
   // Casi toda recolección la hace Uber Direct, no nuestra flota: se marca en
   // las notas junto con la ventana elegida, porque ahí el horario es una
   // preferencia y no un compromiso. Es la misma nota que escribe el
@@ -556,6 +580,7 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   // hilo entero, y si algo sale mal hay a quién llamar.
   if (conversacion) {
     conversacion.reserva = r.id;
+    conversacion.reservaHuella = huella;
     conversacion.cliente = { nombre: String(nombre).trim(), telefono: tel, email: correo };
   }
 

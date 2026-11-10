@@ -316,6 +316,42 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
     t('el texto para el cliente lo explica', /transferencia|link de pago/i.test(r.decir_al_cliente));
   }
 
+  // EL CASO QUE PASÓ EN PRODUCCIÓN: el modelo llamó a la herramienta dos
+  // veces en el mismo turno. La primera guardó la reserva y mandó el correo
+  // de confirmación; la segunda chocó con el cupo que la primera acababa de
+  // ocupar, y el bot le dijo al cliente que NO había quedado agendado, con el
+  // correo ya en su bandeja. Decirle a alguien que su reserva falló cuando sí
+  // existe es peor que cualquiera de las dos cosas por separado.
+  {
+    const r1 = reservaFalsa();
+    const conversacion = {};
+    const deps = { supabase: supabaseFalso(CP), reservar: r1.fn, conversacion };
+
+    const a = await correrHerramienta('agendar_recoleccion', datos, deps, lunes);
+    const b = await correrHerramienta('agendar_recoleccion', datos, deps, lunes);
+
+    t('la segunda llamada idéntica NO guarda otra reserva', r1.llamadas.length === 1);
+    t('y contesta que sí quedó, no que falló', b.agendado === true);
+    t('con la misma reserva de la primera', b.reserva === a.reserva);
+    t('marcada como que ya estaba', b.ya_estaba === true);
+    t('y se lo dice al cliente sin alarmarlo',
+      b.decir_al_cliente.startsWith('Ya había quedado')
+      && !/no se pudo|no quedó|falló|error/i.test(b.decir_al_cliente));
+  }
+  {
+    // Pero una recolección DISTINTA en la misma conversación sí se agenda:
+    // el candado es por teléfono, día y ventana, no por conversación.
+    const r1 = reservaFalsa();
+    const conversacion = {};
+    const deps = { supabase: supabaseFalso(CP), reservar: r1.fn, conversacion };
+    const otroDia = dias[1];
+    await correrHerramienta('agendar_recoleccion', datos, deps, lunes);
+    const b = await correrHerramienta('agendar_recoleccion',
+      { ...datos, fecha: otroDia.isoDate, ventana: otroDia.horas[0].label }, deps, lunes);
+    t('otra fecha sí se agenda aparte', r1.llamadas.length === 2 && b.agendado === true);
+    t('y no la marca como repetida', b.ya_estaba === undefined);
+  }
+
   t('sin teléfono bueno no agenda',
     (await correrHerramienta('agendar_recoleccion', { ...datos, telefono: 'hola' },
       { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).agendado === false);

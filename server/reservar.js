@@ -47,6 +47,40 @@ export async function crearReserva(datos = {}) {
     return { ok: false, error: 'correo-invalido', http: 400 };
   }
 
+  const supabase = getSupabaseClient();
+  const telNormalizado = normalizePhone(telefono);
+
+  // LA MISMA RESERVA DOS VECES NO SON DOS RESERVAS.
+  //
+  // Mismo teléfono, mismo día y misma ventana es, sin excepción práctica, un
+  // intento repetido: un doble clic en el formulario, un reintento después de
+  // que se perdió la respuesta, o el bot llamando dos veces a la herramienta
+  // en el mismo turno. Nadie agenda dos recolecciones para su propio
+  // domicilio a la misma hora.
+  //
+  // Sin esto, el segundo intento escribía otra fila, mandaba OTRO correo de
+  // confirmación y además ocupaba un lugar del cupo — y como el cupo ya
+  // estaba lleno por culpa del primero, el segundo fallaba y quien llamaba
+  // reportaba un fracaso que no existía. Eso fue exactamente lo que pasó: el
+  // cliente recibió su correo de confirmación y el bot le dijo que no había
+  // quedado agendado.
+  //
+  // Se devuelve la que ya existe, como éxito. Es lo honesto: la reserva está.
+  if (telNormalizado && fecha) {
+    const { data: yaHecha } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('telefono', telNormalizado)
+      .eq('fecha_recoleccion', fecha)
+      .eq('hora_label', horaLabel)
+      .in('pago_status', ['pagado', 'pago_entrega'])
+      .limit(1)
+      .maybeSingle();
+    if (yaHecha) {
+      return { ok: true, id: yaHecha.id, yaConfirmada: true };
+    }
+  }
+
   if (await isSlotFull(diaLabel, horaLabel, bookingId)) {
     return {
       ok: false, error: 'slot-full', http: 409,
@@ -54,13 +88,11 @@ export async function crearReserva(datos = {}) {
     };
   }
 
-  const supabase = getSupabaseClient();
-
   const bookingData = {
     nombre: nombre || null,
     direccion,
     cp: cp || null,
-    telefono: normalizePhone(telefono),
+    telefono: telNormalizado,
     email: correo || null,
     dia_label: diaLabel,
     hora_label: horaLabel,
