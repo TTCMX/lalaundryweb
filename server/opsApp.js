@@ -48,7 +48,10 @@ export async function notifyOpsApp(booking, { transporte } = {}) {
     const data = await res.json().catch(() => null);
     if (!res.ok) {
       console.error('[ops-app] /api/agendar failed:', res.status, data?.error);
-      return { ok: false };
+      // El motivo viaja de vuelta: quien llama tiene que poder AVISAR que
+      // esta reserva no llegó a operaciones, y "falló" sin más no sirve para
+      // ir a arreglarlo. Un 403 es el secreto compartido; un 400, el cuerpo.
+      return { ok: false, motivo: `HTTP ${res.status}${data?.error ? `: ${data.error}` : ''}` };
     }
 
     return {
@@ -58,7 +61,7 @@ export async function notifyOpsApp(booking, { transporte } = {}) {
     };
   } catch (err) {
     console.error('[ops-app] /api/agendar request failed:', err);
-    return { ok: false };
+    return { ok: false, motivo: `no respondió (${err?.message || err})` };
   }
 }
 

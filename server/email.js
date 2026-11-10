@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { textoPago } from './pago.js';
+import { textoPagoConMomento } from './pago.js';
 
 const COLOR_BG = '#dcf5f6';
 const COLOR_CARD = '#ffffff';
@@ -55,7 +55,7 @@ function pagoLabelFor(booking, transporte) {
   if (booking.pago_status === 'pagado') {
     return `Depósito pagado en línea${booking.deposito_monto ? ` ($${booking.deposito_monto} MXN)` : ''}`;
   }
-  return textoPago(transporte);
+  return textoPagoConMomento(transporte);
 }
 
 function renderRows(rows) {
@@ -246,6 +246,51 @@ export function formatOwnerNotificationHtml(booking) {
 // Es el único mecanismo que convierte "el bot escaló" en que alguien se
 // entere: el cliente se queda viendo el chat, y si nadie abre la bandeja se
 // queda esperando. Va al mismo buzón que los avisos de reserva.
+// Aviso al dueño cuando una reserva NO llegó a la app de operaciones.
+//
+// Es la misma clase de falla silenciosa que los correos: la reserva queda
+// guardada aquí, el cliente recibe su confirmación y queda esperando al
+// repartidor — y en operaciones no hay nada, así que nadie va a ir. El único
+// rastro era un console.error en Vercel que nadie lee, y la forma de
+// enterarse era que alguien buscara el pedido y no lo encontrara.
+//
+// Best-effort: si este aviso también falla, se anota y ya. La reserva del
+// cliente nunca se cae por un correo.
+export async function avisarFalloDeOperaciones(booking, motivo) {
+  const ownerEmails = (process.env.OWNER_NOTIFICATION_EMAIL || '')
+    .split(',').map((e) => e.trim()).filter(Boolean);
+  if (!ownerEmails.length) return { enviado: false, motivo: 'no-owner-email' };
+
+  const resend = getResend();
+  if (!resend) return { enviado: false, motivo: SIN_LLAVE };
+
+  return mandar(resend, {
+    from: process.env.RESEND_FROM_EMAIL || 'La Laundry <onboarding@resend.dev>',
+    replyTo: replyTo(),
+    to: ownerEmails,
+    subject: `Una reserva NO llegó a operaciones — ${booking.nombre || booking.telefono || booking.id}`,
+    html: `
+      <div style="font-family:Arial,Helvetica,sans-serif;color:#26201A;max-width:620px">
+        <h2 style="margin:0 0 4px">Esta reserva existe aquí y no en la app</h2>
+        <p style="margin:0 0 16px;color:#6A5F52;font-size:14px">
+          El cliente ya recibió su confirmación y va a estar esperando.
+          En la app de operaciones no hay nada, así que nadie va a ir.
+          <b>Hay que capturarla a mano.</b>
+        </p>
+        ${renderRows([
+          { label: 'Nombre', value: booking.nombre },
+          { label: 'Teléfono', value: booking.telefono },
+          { label: 'Domicilio', value: booking.direccion },
+          { label: 'Día', value: booking.dia_label },
+          { label: 'Ventana', value: booking.hora_label },
+          { label: 'Notas', value: booking.detalles },
+          { label: 'Reserva', value: booking.id },
+          { label: 'Por qué falló', value: motivo || 'sin detalle' },
+        ])}
+      </div>`,
+  }, 'fallo-operaciones');
+}
+
 export async function avisarChatEsperando({ conversacionId, motivo, ultimoMensaje }) {
   const destinos = (process.env.OWNER_NOTIFICATION_EMAIL || '')
     .split(',').map((e) => e.trim()).filter(Boolean);

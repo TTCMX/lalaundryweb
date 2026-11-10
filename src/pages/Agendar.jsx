@@ -10,7 +10,7 @@ import { correoValido, sugerenciaCorreo, limpiarCorreo } from '../../server/corr
 import { WHATSAPP_LEGIBLE, whatsappURL } from '../lib/contacto.js';
 // Cómo se paga depende del transporte de la ventana elegida: con Uber Direct
 // no hay quién reciba efectivo. Ver server/pago.js.
-import { avisoPago, textoPago } from '../../server/pago.js';
+import { avisoPago, textoPagoConMomento } from '../../server/pago.js';
 import {
   diasDisponibles, formatoPesos, minimoDeZona, hayTintoreria,
   // ESTE FALTABA, Y ERA EL CRASH. Se usa en el banner de cobertura, que solo
@@ -909,7 +909,7 @@ export default function Agendar() {
                 <div className={styles.resumenRow}>
                   <span className={styles.resumenLabel}>Pago</span>
                   <span className={styles.resumenValue}>
-                    {textoPago(HORAS[horaSel]?.propio ? 'propio' : 'uber_direct')}
+                    {textoPagoConMomento(HORAS[horaSel]?.propio ? 'propio' : 'uber_direct')}
                   </span>
                 </div>
               </div>

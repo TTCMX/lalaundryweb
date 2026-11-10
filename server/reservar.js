@@ -16,7 +16,7 @@
 import { getSupabaseClient } from './supabaseClient.js';
 import {
   sendBookingConfirmationEmail, sendOwnerBookingNotification,
-  avisarFalloDeCorreo, esFalla,
+  avisarFalloDeCorreo, avisarFalloDeOperaciones, esFalla,
 } from './email.js';
 import { isSlotFull, getMaxBookingsPerSlot } from './capacity.js';
 import { notifyOpsApp } from './opsApp.js';
@@ -189,9 +189,19 @@ export async function crearReserva(datos = {}) {
         .from('bookings')
         .update({ ops_pedido_id: opsResult.pedidoId, ops_cliente_id: opsResult.clienteId })
         .eq('id', booking.id);
+    } else {
+      // NO SE PUEDE QUEDAR EN SILENCIO. La reserva existe aquí, el cliente ya
+      // tiene su confirmación y va a estar esperando; en operaciones no hay
+      // nada, así que nadie va a ir. Antes el único rastro era un
+      // console.error en Vercel, y la forma de enterarse era que alguien
+      // buscara el pedido y no lo encontrara.
+      await avisarFalloDeOperaciones(booking, opsResult.motivo);
     }
   } catch (opsErr) {
     console.error('[reservar] ops-app relay failed (non-fatal):', opsErr);
+    try {
+      await avisarFalloDeOperaciones(booking, opsErr?.message || String(opsErr));
+    } catch { /* el aviso es lo último que puede tumbar una reserva */ }
   }
 
   return { ok: true, id: booking.id, booking };
