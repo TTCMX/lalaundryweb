@@ -236,6 +236,40 @@ export function formatOwnerNotificationHtml(booking) {
   });
 }
 
+// Aviso de que una conversación del chat está esperando a una persona.
+//
+// Es el único mecanismo que convierte "el bot escaló" en que alguien se
+// entere: el cliente se queda viendo el chat, y si nadie abre la bandeja se
+// queda esperando. Va al mismo buzón que los avisos de reserva.
+export async function avisarChatEsperando({ conversacionId, motivo, ultimoMensaje }) {
+  const destinos = (process.env.OWNER_NOTIFICATION_EMAIL || '')
+    .split(',').map((e) => e.trim()).filter(Boolean);
+  if (!destinos.length) return { enviado: false, motivo: 'no-owner-email' };
+
+  const resend = getResend();
+  if (!resend) return { enviado: false, motivo: SIN_LLAVE };
+
+  const from = process.env.RESEND_FROM_EMAIL || 'La Laundry <onboarding@resend.dev>';
+  const bandeja = `${process.env.SITE_URL?.replace(/\/$/, '') || 'https://lalaundry.xyz'}/inbox`;
+
+  return mandar(resend, {
+    from,
+    to: destinos,
+    subject: '💬 Alguien espera respuesta en el chat',
+    html: renderEmailShell({
+      eyebrow: 'Chat',
+      heading: 'Una conversación pasó a una persona',
+      intro: motivo || 'El bot no pudo resolverla.',
+      rows: [
+        { label: 'Conversación', value: conversacionId },
+        { label: 'Último mensaje', value: ultimoMensaje || '—' },
+        { label: 'Bandeja', value: bandeja },
+      ],
+      footerNote: 'La Laundry — el cliente sigue con el chat abierto.',
+    }),
+  }, 'aviso de chat');
+}
+
 export async function sendOwnerBookingNotification(booking) {
   const ownerEmails = (process.env.OWNER_NOTIFICATION_EMAIL || '')
     .split(',')

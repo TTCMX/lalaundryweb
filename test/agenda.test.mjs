@@ -136,6 +136,18 @@ t('la anticipación es de dos horas', HORAS_ANTICIPACION === 2);
 t('sin zona no hay días: no se sabe qué ventanas aplican',
   diasDisponibles(null, lunes8am).length === 0 &&
   diasDisponibles(undefined, lunes8am).length === 0);
+// Una zona que no existe tampoco. Antes solo se miraba que no fuera vacía,
+// así que "Z" recibía el calendario completo como si fuera zona nuestra.
+t('una zona inventada no recibe calendario',
+  diasDisponibles('Z', lunes8am).length === 0 &&
+  diasDisponibles('banana', lunes8am).length === 0 &&
+  diasDisponibles('', lunes8am).length === 0);
+t('pero las siete reales sí',
+  ['A','B','C','D','E','F','G'].every(z => diasDisponibles(z, lunes8am).length > 0));
+t('y no importan las mayúsculas ni los espacios',
+  diasDisponibles(' c ', lunes8am).length > 0);
+t('un horario en una zona inventada no es válido',
+  esHorarioValido({ zona: 'Z', isoDate: '2026-11-09', horaLabel: '2pm-4pm' }, lunes8am) === false);
 
 // ── Validación del lado del servidor ──────────────────────────────────────
 // El navegador manda día y etiqueta; sin esto se podría pedir un sábado.

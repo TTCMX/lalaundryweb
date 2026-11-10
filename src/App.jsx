@@ -1,4 +1,5 @@
 import { Analytics } from '@vercel/analytics/react';
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import Inicio from './pages/Inicio.jsx';
@@ -10,6 +11,9 @@ import Membresia from './pages/Membresia.jsx';
 import MembresiaGracias from './pages/MembresiaGracias.jsx';
 import AgendarConfirmacion from './pages/AgendarConfirmacion.jsx';
 import TarjetaRegalo from './pages/TarjetaRegalo.jsx';
+// La bandeja del chat es una página interna de una persona: se baja aparte
+// para no pesarle a los visitantes del sitio.
+const Inbox = lazy(() => import('./pages/Inbox.jsx'));
 
 export default function App() {
   return (
@@ -26,6 +30,7 @@ export default function App() {
         {/* Producto pausado: la ruta se queda en pie con el aviso, porque
             la URL está indexada y compartida. Ver la página. */}
         <Route path="/tarjeta-regalo" element={<TarjetaRegalo />} />
+        <Route path="/inbox" element={<Suspense fallback={null}><Inbox /></Suspense>} />
       </Routes>
       <Analytics />
     </Layout>

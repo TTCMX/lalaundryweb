@@ -119,9 +119,17 @@ export function horasDeDia(fecha, diaSemana, zona, ahora = new Date()) {
 
 // Los próximos días con algo que ofrecer. Sin zona no hay calendario: no se
 // sabe qué ventanas aplican, y ofrecer todas sería prometer de más.
+export const zonaValida = (zona) =>
+  Object.prototype.hasOwnProperty.call(MINIMO_POR_ZONA, String(zona ?? '').trim().toUpperCase());
+
 export function diasDisponibles(zona, ahora = new Date()) {
   const dias = [];
-  if (!zona) return dias;
+  // Sin zona, o con una que no existe, no hay calendario. Antes solo se
+  // miraba que no fuera vacía, así que una zona inventada —"Z", o lo que
+  // mandara quien llamara— recibía el calendario completo como si fuera una
+  // zona nuestra. En el formulario la zona siempre viene de check-coverage y
+  // nunca pasó; con el bot del chat, el modelo puede mandar cualquier cosa.
+  if (!zonaValida(zona)) return dias;
 
   const cursor = new Date(ahora);
   cursor.setHours(0, 0, 0, 0);
