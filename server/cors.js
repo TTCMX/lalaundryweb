@@ -52,6 +52,28 @@ export const setCors = (req, res, metodo = 'POST') => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 };
 
+// Puerta para las tareas programadas de Vercel.
+//
+// Un cron no manda Origin, así que la comprobación normal lo rechazaría.
+// Vercel firma sus llamadas con CRON_SECRET en el encabezado Authorization.
+// Sin esa variable la tarea no corre para nadie: mejor que no se ejecute a
+// que quede abierta a quien conozca la URL.
+//
+// Espejo de cronNoAutorizado en laundry-os/lib/cors.js.
+export const cronNoAutorizado = (req, res) => {
+  const secreto = process.env.CRON_SECRET;
+  if (!secreto) {
+    console.error('[cron] falta CRON_SECRET: la tarea no corre hasta configurarla en Vercel');
+    res.status(503).json({ error: 'Tarea no configurada' });
+    return true;
+  }
+  if (req.headers?.authorization !== `Bearer ${secreto}`) {
+    res.status(401).json({ error: 'No autorizado' });
+    return true;
+  }
+  return false;
+};
+
 // Puerta de entrada estándar: CORS, preflight, método y origen. Devuelve
 // true cuando la petición ya quedó contestada y el handler debe cortar.
 export const rechazar = (req, res, { metodo = 'POST' } = {}) => {
