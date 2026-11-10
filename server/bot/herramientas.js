@@ -23,6 +23,8 @@ import { normalizePhone } from '../phone.js';
 import { correoValido, limpiarCorreo } from '../correo.js';
 import { formasDePago, avisoPago } from '../pago.js';
 import { crearReserva } from '../reservar.js';
+import { estadoDePedido } from '../opsApp.js';
+import { cuandoContestan } from '../atencion.js';
 
 export const URL_MI_ORDEN = 'https://app.lalaundry.xyz/miorden';
 
@@ -141,6 +143,20 @@ export const DEFINICIONES = [
         },
       },
       required: ['nombre', 'telefono', 'email', 'cp', 'direccion', 'fecha', 'ventana', 'detalles'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'estado_de_pedido',
+    description:
+      'Dice en qué va el pedido de un cliente: si ya lo recogimos, si está en lavado, si ya está listo. Úsala cuando pregunten por su pedido, con un teléfono que hayan escrito en ESTA conversación. Nunca inventes un estado ni una fecha de entrega.',
+    strict: true,
+    input_schema: {
+      type: 'object',
+      properties: {
+        telefono: { type: 'string', description: 'El teléfono tal como lo escribió el cliente.' },
+      },
+      required: ['telefono'],
       additionalProperties: false,
     },
   },
@@ -530,6 +546,38 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   };
 }
 
+async function estado_de_pedido({ telefono }, deps = {}) {
+  // `consultarOps` entra por deps para poder probarlo sin red.
+  const consultar = deps.consultarOps || estadoDePedido;
+  const tel = normalizePhone(telefono);
+  if (!tel) return { encontrado: false, motivo: 'Ese teléfono no se ve bien. Pídelo a 10 dígitos.' };
+
+  const r = await consultar(tel);
+  if (!r.ok) {
+    return { error: 'No pude consultar el pedido en este momento. Ofrécele escalar con una persona.' };
+  }
+  if (!r.encontrado) {
+    return {
+      encontrado: false,
+      motivo: 'No hay ninguna cuenta con ese número. Puede ser que haya agendado con otro teléfono.',
+    };
+  }
+  if (!r.pedidos.length) {
+    return {
+      encontrado: true,
+      nombre: r.nombre,
+      pedidos: [],
+      motivo: 'No tiene pedidos en curso. Todos los suyos ya se entregaron.',
+    };
+  }
+  return {
+    encontrado: true,
+    nombre: r.nombre,
+    pedidos: r.pedidos,
+    nota: 'Dile en qué va con las palabras de `en_palabras`. Si no hay fecha de entrega todavía, NO la inventes: di que se la confirmamos en cuanto esté listo.',
+  };
+}
+
 async function cliente_recurrente({ telefono }, { supabase }) {
   const objetivo = normalizePhone(telefono);
   if (!objetivo) return { encontrado: false };
@@ -569,20 +617,26 @@ export function direccionParcial(direccion) {
   return colonia ? `${calle}, ${colonia}` : calle;
 }
 
-async function escalar_a_humano({ motivo }, { conversacion }) {
+async function escalar_a_humano({ motivo }, { conversacion }, ahora = new Date()) {
   // El efecto real lo aplica quien llama (marca la conversación y avisa al
   // equipo). Aquí solo se confirma, para que el modelo sepa qué decirle al
   // cliente.
   if (conversacion) conversacion.escalar = String(motivo || 'Sin motivo').slice(0, 300);
+
+  // CUÁNDO contestan, no solo que alguien contestará. A las 11 de la noche
+  // "te contesta alguien en un momento" es mentira, y el cliente se queda
+  // con la pestaña abierta esperando a nadie.
+  const { abierto, decir } = cuandoContestan(ahora);
   return {
     escalado: true,
-    decir_al_cliente: 'Ya le pasé tu mensaje a una persona del equipo. Te contesta por aquí mismo en un momento.',
+    hay_alguien_ahora: abierto,
+    decir_al_cliente: `Ya le pasé tu mensaje a una persona del equipo. ${decir}`,
   };
 }
 
 const IMPLEMENTACIONES = {
   verificar_cobertura, consultar_catalogo, cotizar, horarios_disponibles,
-  agendar_recoleccion, cliente_recurrente, escalar_a_humano,
+  agendar_recoleccion, estado_de_pedido, cliente_recurrente, escalar_a_humano,
 };
 
 // Corre una herramienta. Nunca lanza: un error aquí tiene que volver al

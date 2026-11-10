@@ -61,3 +61,58 @@ export async function notifyOpsApp(booking, { transporte } = {}) {
     return { ok: false };
   }
 }
+
+// ─── Estatus de un pedido ─────────────────────────────────────────────────
+//
+// Lo usa el bot del chat cuando preguntan "¿en qué va mi pedido?". Antes la
+// única respuesta era mandarlos a /miorden, que es pedirle a alguien que ya
+// está escribiendo contigo que se vaya a otra pantalla y teclee su teléfono
+// otra vez.
+//
+// Pregunta a la app de operaciones, que es donde viven los pedidos: este
+// sitio tiene `bookings`, que son las reservas de la web, y eso no sabe si la
+// ropa ya se lavó.
+//
+// Lo que vuelve es SOLO estado y fechas, y así lo devuelve el otro lado. Ni
+// el total, ni los artículos, ni el domicilio: esto se consulta con un
+// teléfono que alguien tecleó en un chat.
+export async function estadoDePedido(tel) {
+  const base = process.env.OPS_API_URL || 'https://app.lalaundry.xyz';
+  const secreto = process.env.OPS_AGENDAR_SECRET;
+
+  try {
+    const res = await fetch(`${base}/api/buscar-cliente`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // El origen de verdad de esta llamada. Una petición de servidor a
+        // servidor no manda Origin sola, y el otro lado lo pide; no es un
+        // disfraz, la llamada SÍ sale del servidor de lalaundry.xyz. Esto
+        // hace que la consulta funcione sin configurar nada.
+        Origin: 'https://lalaundry.xyz',
+        // Y cuando el secreto compartido está puesto en los dos proyectos,
+        // la llamada queda además autenticada de verdad, que es lo que el
+        // origen por sí solo nunca da.
+        ...(secreto ? { Authorization: `Bearer ${secreto}` } : {}),
+      },
+      body: JSON.stringify({ tel, conPedidos: true }),
+    });
+
+    if (!res.ok) {
+      console.error('[ops-app] buscar-cliente falló:', res.status);
+      return { ok: false };
+    }
+    const data = await res.json().catch(() => null);
+    if (!data?.found) return { ok: true, encontrado: false };
+
+    return {
+      ok: true,
+      encontrado: true,
+      nombre: (data.cliente?.nombre || '').split(' ')[0] || null,
+      pedidos: data.pedidos || [],
+    };
+  } catch (err) {
+    console.error('[ops-app] buscar-cliente no respondió:', err?.message || err);
+    return { ok: false };
+  }
+}

@@ -33,10 +33,10 @@ const CP = {
 };
 
 // ── Las definiciones ──────────────────────────────────────────────────────
-t('son siete herramientas', NOMBRES.length === 7);
+t('son ocho herramientas', NOMBRES.length === 8);
 t('y están todas las que hacen falta para cotizar y agendar',
   ['verificar_cobertura', 'consultar_catalogo', 'cotizar', 'horarios_disponibles',
-   'agendar_recoleccion', 'cliente_recurrente', 'escalar_a_humano']
+   'agendar_recoleccion', 'estado_de_pedido', 'cliente_recurrente', 'escalar_a_humano']
     .every((n) => NOMBRES.includes(n)));
 t('agendar_recoleccion pide los seis datos y el horario',
   ['nombre', 'telefono', 'email', 'cp', 'direccion', 'fecha', 'ventana']
@@ -361,6 +361,90 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
   }
 }
 
+// ── estado_de_pedido ──────────────────────────────────────────────────────
+//
+// Antes la única respuesta a "¿en qué va mi pedido?" era mandarlos a
+// /miorden: pedirle a quien ya está escribiendo contigo que se vaya a otra
+// pantalla y teclee su teléfono otra vez. Ahora el bot lo consulta.
+//
+// Lo que se cuida: que NO devuelva de más. Esto se consulta con un teléfono
+// que alguien tecleó en un chat, así que si prueban números ajenos no se
+// pueden llevar el domicilio, el total ni los artículos.
+{
+  const opsFalso = (pedidos, nombre = 'Katherine Méndez') => async () => ({
+    ok: true, encontrado: true, nombre: nombre.split(' ')[0], pedidos,
+  });
+
+  {
+    const r = await correrHerramienta('estado_de_pedido', { telefono: '55 1234 5678' }, {
+      consultarOps: opsFalso([{
+        id: 'p1', estado: 'lavando', en_palabras: 'En lavado',
+        fecha_recoleccion: '2026-11-09', fecha_entrega: null, ventana_entrega: null,
+      }]),
+    });
+    t('dice en qué va el pedido', r.encontrado === true && r.pedidos[0].estado === 'lavando');
+    t('en palabras de cliente, no de la planta', r.pedidos[0].en_palabras === 'En lavado');
+    t('y recuerda al bot que no invente la fecha de entrega',
+      r.nota.includes('NO la inventes'));
+  }
+  {
+    const r = await correrHerramienta('estado_de_pedido', { telefono: '5512345678' }, {
+      consultarOps: opsFalso([]),
+    });
+    t('sin pedidos en curso se dice, no se inventa uno', r.pedidos.length === 0);
+    t('y se explica', r.motivo.includes('entregaron'));
+  }
+  {
+    const r = await correrHerramienta('estado_de_pedido', { telefono: '5599998888' }, {
+      consultarOps: async () => ({ ok: true, encontrado: false }),
+    });
+    t('un teléfono que no existe no encuentra nada', r.encontrado === false);
+    t('sin insinuar que el pedido existe pero no se ve', r.pedidos === undefined);
+  }
+  {
+    const r = await correrHerramienta('estado_de_pedido', { telefono: '5512345678' }, {
+      consultarOps: async () => ({ ok: false }),
+    });
+    t('si operaciones no contesta, NO se inventa un estado', r.encontrado === undefined);
+    t('y se ofrece escalar', r.error.includes('escalar'));
+  }
+  t('un teléfono sin dígitos ni se consulta',
+    (await correrHerramienta('estado_de_pedido', { telefono: 'hola' }, {
+      consultarOps: async () => { throw new Error('no debería consultarse'); },
+    })).encontrado === false);
+  {
+    const r = await correrHerramienta('estado_de_pedido', { telefono: '5512345678' }, {
+      consultarOps: opsFalso([{
+        id: 'p1', estado: 'entrega_agendada', en_palabras: 'Listo, con entrega programada',
+        fecha_recoleccion: '2026-11-09', fecha_entrega: '2026-11-12', ventana_entrega: '1pm-3pm',
+      }]),
+    });
+    const campos = Object.keys(r.pedidos[0]);
+    t('con entrega programada trae su fecha y ventana',
+      r.pedidos[0].fecha_entrega === '2026-11-12' && r.pedidos[0].ventana_entrega === '1pm-3pm');
+    t('y NUNCA el total, los artículos ni el domicilio',
+      !campos.some((c) => /total|items|articulo|direccion|dir|email|pago/i.test(c)));
+  }
+}
+
+// ── escalar: decir CUÁNDO contestan ───────────────────────────────────────
+{
+  const enHorario = new Date(Date.UTC(2026, 10, 10, 18)); // mediodía en México
+  const deMadrugada = new Date(Date.UTC(2026, 10, 10, 6)); // medianoche en México
+
+  const conv1 = {};
+  const r1 = await correrHerramienta('escalar_a_humano', { motivo: 'Queja' }, { conversacion: conv1 }, enHorario);
+  t('en horario se promete pronto', r1.hay_alguien_ahora === true);
+  t('y se marca la conversación igual', conv1.escalar === 'Queja');
+
+  const conv2 = {};
+  const r2 = await correrHerramienta('escalar_a_humano', { motivo: 'Queja' }, { conversacion: conv2 }, deMadrugada);
+  t('de madrugada NO se promete "en un momento"',
+    r2.hay_alguien_ahora === false && !/en un momento/i.test(r2.decir_al_cliente));
+  t('pero se escala igual: la conversación queda esperando', conv2.escalar === 'Queja');
+  t('y se le dice a qué hora le contestan', /9am/.test(r2.decir_al_cliente));
+}
+
 // ── Una herramienta que no existe ─────────────────────────────────────────
 t('una herramienta inventada no truena',
   (await correrHerramienta('borrar_todo', {}, {})).error !== undefined);
@@ -399,7 +483,7 @@ const usa = (nombre, input) => ({
   t('manda el modelo correcto', cli.vistos[0].model === MODELO);
   t('con el tope de tokens', cli.vistos[0].max_tokens === MAX_TOKENS);
   t('y razonamiento bajo, como pide el plan', cli.vistos[0].output_config.effort === 'low');
-  t('con las siete herramientas disponibles', cli.vistos[0].tools.length === 7);
+  t('con las ocho herramientas disponibles', cli.vistos[0].tools.length === 8);
   t('el prompt prohíbe inventar precios', cli.vistos[0].system.includes('Nunca inventes un precio'));
   t('y trae los escalones de tenis armados del módulo', cli.vistos[0].system.includes('$390'));
   t('contabiliza el uso', r.uso.entrada === 100 && r.uso.salida === 20);
