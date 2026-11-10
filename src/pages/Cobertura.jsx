@@ -3,15 +3,19 @@ import { Link } from 'react-router-dom';
 import PageHero from '../components/PageHero.jsx';
 import { CheckIcon, XIcon } from '../components/Icon.jsx';
 import styles from './Cobertura.module.css';
+import {
+  gruposDeTransporte, transporteDeZona, formatoPesos, hayTintoreria,
+} from '../../server/agenda.js';
 
-// Same grouping used for the free-transport threshold, independent of the
-// day/hora scheduling rules per zone (see ZONE_SCHEDULES in Agendar.jsx).
-const ZONE_GROUPS = { A: 'ABC', B: 'ABC', C: 'ABC', D: 'DE', E: 'DE', F: 'FG', G: 'FG' };
-const GROUP_INFO = {
-  ABC: { minimo: '$300', costo: '$100' },
-  DE: { minimo: '$500', costo: '$180' },
-  FG: { minimo: '$1,000', costo: '$250' },
-};
+// Los números de transporte salen de server/agenda.js, no de aquí.
+//
+// Aquí vivía una segunda tabla —ZONE_GROUPS y GROUP_INFO— que no coincidía
+// con la del formulario: ésta anunciaba transporte gratis desde $300 en la
+// zona C y desde $500 en la E; /agendar le decía al mismo cliente $500 y
+// $1,000. La página que lee antes de agendar prometía más barato que la que
+// usa al agendar. Ahora las dos leen la misma tabla y el conflicto no se
+// puede repetir.
+const GRUPOS = gruposDeTransporte();
 
 export default function Cobertura() {
   const [cp, setCp] = useState('');
@@ -42,8 +46,8 @@ export default function Cobertura() {
     }
   };
 
-  const grupo = zona ? ZONE_GROUPS[zona] : null;
-  const info = grupo ? GROUP_INFO[grupo] : null;
+  const info = zona ? transporteDeZona(zona) : null;
+  const sinTintoreria = zona ? !hayTintoreria(zona) : false;
 
   return (
     <>
@@ -86,13 +90,13 @@ export default function Cobertura() {
                 <p className={styles.resultTitle}>Tenemos cobertura — estás en la zona {zona}.</p>
                 {info && (
                   <p className={styles.resultText}>
-                    {grupo === 'FG' &&
+                    {sinTintoreria &&
                       'La recolección y entrega en tu zona se hace con un proveedor externo (Uber Direct). '}
-                    El transporte es gratis en pedidos de {info.minimo} o más. En pedidos
-                    menores, el transporte cuesta {info.costo}.
+                    El transporte es gratis en pedidos de {formatoPesos(info.minimo)} o más. En pedidos
+                    menores, el transporte cuesta {formatoPesos(info.costo)}.
                   </p>
                 )}
-                {grupo === 'FG' && (
+                {sinTintoreria && (
                   <p className={styles.resultAviso}>
                     Importante: en tu zona solo está disponible lavandería y tenis. Por ahora no
                     ofrecemos tintorería.
@@ -127,21 +131,13 @@ export default function Cobertura() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>A, B, C</td>
-                <td>$300</td>
-                <td>$100</td>
-              </tr>
-              <tr>
-                <td>D, E</td>
-                <td>$500</td>
-                <td>$180</td>
-              </tr>
-              <tr>
-                <td>F, G</td>
-                <td>$1,000</td>
-                <td>$250</td>
-              </tr>
+              {GRUPOS.map((g) => (
+                <tr key={g.zonas.join('')}>
+                  <td>{g.zonas.join(', ')}</td>
+                  <td>{formatoPesos(g.minimo)}</td>
+                  <td>{formatoPesos(g.costo)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
 

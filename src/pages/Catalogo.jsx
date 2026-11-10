@@ -1,7 +1,16 @@
 import { Link } from 'react-router-dom';
 import PageHero from '../components/PageHero.jsx';
 import styles from './Catalogo.module.css';
-import { resumenTenis } from '../../server/precios-publicos.js';
+import { porCategoria, precioTexto } from '../../server/catalogo.js';
+
+// Esta página ya no tiene precios adentro.
+//
+// Los tenía: una lista de 36 artículos tecleada aquí, que era la única copia
+// del catálogo del sitio. Por eso el bot del chat no sabía cotizar nada que
+// no fueran tenis —no había de dónde leerlo— y por eso el catálogo decía
+// "Tenis $150" mientras la caja cobraba $390 por tres pares. Ahora la lista
+// vive en server/catalogo.js y aquí solo se dibuja: lo que anuncia esta
+// página y lo que cotiza el chat son, por construcción, lo mismo.
 
 const PROCESO = [
   { n: '1', titulo: 'Recolectamos' },
@@ -10,70 +19,7 @@ const PROCESO = [
   { n: '4', titulo: 'Entregamos' },
 ];
 
-const CATEGORIAS = [
-  {
-    nombre: 'Lavandería',
-    nota: 'Recolección y entrega en ~72h',
-    items: [
-      { nombre: 'Ropa y ropa de cama', precio: '$40', detalle: 'Por kg' },
-      { nombre: 'Edredón', precio: '$160', detalle: 'Matrimonial +$10, Queen +$20, King +$30, Pluma +$55' },
-      // El catálogo decía "$150" a secas, así que quien lo leía creía que
-      // tres pares costaban $450 cuando la caja cobra $390. El detalle sale
-      // de la misma tabla que cobra (ver server/precios-publicos.js).
-      { nombre: 'Tenis', precio: '$150', detalle: `Por par. ${resumenTenis()}` },
-      { nombre: 'Gorras', precio: '$80', detalle: 'Gamuza y ante +$20' },
-      { nombre: 'Almohada', precio: '$170', detalle: 'Queen y King +$30' },
-      { nombre: 'Mochila', precio: '$140', detalle: 'Maleta o grande +$30, cuero +$40' },
-      { nombre: 'Cubrecolchón', precio: '$300', detalle: 'Matrimonial +$30, Queen +$70, King +$100' },
-      { nombre: 'Sneakers — lavado en seco', precio: '$250', detalle: '' },
-      { nombre: 'Botas — lavado en seco', precio: '$300', detalle: '' },
-      { nombre: 'Bolsas — mantenimiento', precio: 'Desde $250', detalle: '' },
-    ],
-  },
-  {
-    nombre: 'Tintorería',
-    nota: 'No disponible en zonas F y G',
-    items: [
-      { nombre: 'Saco', precio: '$140', detalle: '' },
-      { nombre: 'Vestido', precio: '$200', detalle: '' },
-      { nombre: 'Suéter', precio: '$130', detalle: '' },
-      { nombre: 'Pantalón', precio: '$140', detalle: '' },
-      { nombre: 'Falda', precio: '$110', detalle: '' },
-      { nombre: 'Camisa', precio: '$110', detalle: '' },
-      { nombre: 'Abrigo', precio: '$230', detalle: '' },
-      { nombre: 'Gabardina', precio: '$250', detalle: '' },
-      { nombre: 'Corbata', precio: '$110', detalle: '' },
-      { nombre: 'Bolsas', precio: '$140', detalle: '' },
-      { nombre: 'Chamarra de piel', precio: '$900', detalle: '' },
-      { nombre: 'Seda o lino', precio: '+$40', detalle: 'Recargo sobre prenda de tintorería' },
-    ],
-  },
-  {
-    nombre: 'Otros servicios',
-    items: [
-      { nombre: 'Planchado', precio: '$35', detalle: '' },
-      { nombre: 'Planchado largo', precio: '$60', detalle: '' },
-      { nombre: 'Desmanchado', precio: '$100', detalle: 'Por pieza' },
-      { nombre: 'Planchado de mantel', precio: '$140', detalle: 'Por m²' },
-      { nombre: 'Transporte sencillo', precio: '$70', detalle: '' },
-      { nombre: 'Suelas amarillas', precio: '$150', detalle: '' },
-      { nombre: 'Lavado a mano', precio: '$70', detalle: 'Por prenda' },
-      { nombre: 'Bolsa', precio: 'Desde $140', detalle: '' },
-      { nombre: 'Teñido', precio: 'Desde $300', detalle: '' },
-      { nombre: 'Vestido de novia', precio: 'Desde $1,500', detalle: '' },
-      { nombre: 'Lavado enzimático', precio: 'Desde $100', detalle: '' },
-    ],
-  },
-  {
-    nombre: 'Limpieza en tu hogar',
-    nota: 'Se realiza en tu domicilio, sin recolección',
-    items: [
-      { nombre: 'Salas', precio: 'Desde $900', detalle: '3 plazas' },
-      { nombre: 'Tapetes', precio: 'Desde $600', detalle: '3m²' },
-      { nombre: 'Colchones', precio: 'Desde $900', detalle: '' },
-    ],
-  },
-];
+const CATEGORIAS = porCategoria();
 
 export default function Catalogo() {
   return (
@@ -111,7 +57,7 @@ export default function Catalogo() {
                       <div className={styles.itemNombre}>{it.nombre}</div>
                       {it.detalle && <div className={styles.itemDetalle}>{it.detalle}</div>}
                     </div>
-                    <div className={styles.itemPrecio}>{it.precio}</div>
+                    <div className={styles.itemPrecio}>{precioTexto(it)}</div>
                   </div>
                 ))}
               </div>

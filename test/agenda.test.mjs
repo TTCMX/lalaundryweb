@@ -9,6 +9,8 @@ import { t, resumen } from './_t.mjs';
 import {
   horasDeDia, diasDisponibles, esHorarioValido, esTransportePropio,
   ventanaDisponible, etiquetaRango, aISO, hayTintoreria, minimoDeZona,
+  costoTransporteDeZona, transporteDeZona, gruposDeTransporte,
+  MINIMO_POR_ZONA, COSTO_TRANSPORTE_POR_ZONA,
   DIAS_HORIZONTE, HORAS_ANTICIPACION,
 } from '../server/agenda.js';
 
@@ -171,8 +173,38 @@ t('una fecha pasada no pasa',
 // ── Zonas ─────────────────────────────────────────────────────────────────
 t('F y G no tienen tintorería', !hayTintoreria('F') && !hayTintoreria('G'));
 t('las demás sí', ['A', 'B', 'C', 'D', 'E'].every(hayTintoreria));
-t('los mínimos por zona', minimoDeZona('A') === 300 && minimoDeZona('C') === 500 && minimoDeZona('G') === 1000);
+t('los mínimos por zona', minimoDeZona('A') === 300 && minimoDeZona('C') === 600 && minimoDeZona('G') === 1000);
 t('una zona que no existe no tiene mínimo', minimoDeZona('Z') === null);
+
+// ── Transporte ────────────────────────────────────────────────────────────
+// Esta tabla estaba escrita dos veces y no coincidía: /cobertura anunciaba
+// transporte gratis desde $300 en la zona C y desde $500 en la E, mientras
+// /agendar usaba $500 y $1,000 para las mismas zonas. O sea que el cliente
+// leía una promesa y agendaba contra otra. Ahora hay una sola tabla y estas
+// pruebas son las que impiden que vuelvan a separarse.
+t('las siete zonas tienen mínimo y costo',
+  Object.keys(MINIMO_POR_ZONA).every((z) => Number.isFinite(COSTO_TRANSPORTE_POR_ZONA[z])));
+t('los mínimos acordados', minimoDeZona('A') === 300 && minimoDeZona('B') === 300
+  && minimoDeZona('C') === 600 && minimoDeZona('D') === 600
+  && minimoDeZona('E') === 1000 && minimoDeZona('F') === 1000 && minimoDeZona('G') === 1000);
+t('y los costos', costoTransporteDeZona('A') === 100 && costoTransporteDeZona('C') === 180
+  && costoTransporteDeZona('G') === 250);
+
+t('un pedido que llega al mínimo no paga transporte',
+  transporteDeZona('C', 600).gratis === true && transporteDeZona('C', 600).costo === 0);
+t('uno que se queda corto sí paga',
+  transporteDeZona('C', 599).gratis === false && transporteDeZona('C', 599).costo === 180);
+t('justo en el mínimo es gratis, no al revés', transporteDeZona('A', 300).costo === 0);
+t('sin subtotal se contesta la regla, no el cobro',
+  transporteDeZona('A').gratis === null && transporteDeZona('A').costo === 100);
+t('la zona en minúsculas también sirve', transporteDeZona('c', 600).gratis === true);
+t('una zona que no existe no tiene transporte', transporteDeZona('Z', 100) === null);
+
+t('los grupos salen de la tabla y no al revés', gruposDeTransporte().length === 3);
+t('y agrupan las zonas que comparten regla',
+  gruposDeTransporte().map((g) => g.zonas.join('')).join('|') === 'AB|CD|EFG');
+t('cada grupo trae sus dos números',
+  gruposDeTransporte().every((g) => Number.isFinite(g.minimo) && Number.isFinite(g.costo)));
 
 // ── Formato ───────────────────────────────────────────────────────────────
 t('mediodía es 12pm', etiquetaRango({ start: 12, end: 14 }) === '12pm-2pm');

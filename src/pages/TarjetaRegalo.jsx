@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import PageHero from '../components/PageHero.jsx';
+import { whatsappURL } from '../lib/contacto.js';
 
 // Las tarjetas de regalo se pausaron el 9-nov-2026.
 //
@@ -9,10 +10,9 @@ import PageHero from '../components/PageHero.jsx';
 // blanco dentro del sitio, porque no hay ruta de respaldo para lo que no
 // existe, y quien llegara pensaría que algo se rompió.
 //
-// FALTA PONER EL CONTACTO. En el repo no hay ningún teléfono ni correo de
-// atención —los que aparecen son placeholders o variables de entorno— así que
-// no inventé uno aquí. Cuando pongas el de verdad, descomenta el botón de
-// abajo con tu número en formato wa.me (52 + diez dígitos, sin espacios).
+// El contacto es el WhatsApp del negocio, que vive en src/lib/contacto.js.
+// Quien compró una tarjeta antes del 9-nov tiene saldo y ningún otro camino
+// para cobrarlo: el botón es el único que le queda.
 //
 // Cuando se vuelva a prender el producto, el formulario de compra está en el
 // historial: el commit anterior a "Tarjetas de regalo: apagadas".
@@ -37,8 +37,10 @@ export default function TarjetaRegalo() {
             Tu saldo sigue registrado. Escríbenos con tu código y lo
             resolvemos contigo.
           </p>
-          {/* <a
-            href="https://wa.me/52XXXXXXXXXX"
+          <a
+            href={whatsappURL('Hola, tengo una tarjeta de regalo de La Laundry y quiero usar mi saldo.')}
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
               display: 'inline-block', marginTop: 16, background: '#26201A',
               color: '#ED7A5E', borderRadius: 10, padding: '11px 20px',
@@ -46,7 +48,7 @@ export default function TarjetaRegalo() {
             }}
           >
             Escribir por WhatsApp
-          </a> */}
+          </a>
         </div>
 
         <p style={{ marginTop: 28, fontSize: 14, color: '#6A5F52', textAlign: 'center' }}>

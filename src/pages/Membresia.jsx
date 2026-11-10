@@ -2,44 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import PageHero from '../components/PageHero.jsx';
 import { CheckIcon } from '../components/Icon.jsx';
 import styles from './Membresia.module.css';
+// Los planes salen de server/membresia.js: el bot del chat tiene que poder
+// decir lo mismo que esta página, y dos copias de un precio se despegan.
+import { NIVELES, PRECIOS } from '../../server/membresia.js';
 
 // La app de operación vive en otro dominio y es quien habla con MercadoPago
 // (necesita el access token, que nunca puede estar en el navegador).
 const OPS_API = import.meta.env.VITE_OPS_API_URL || 'https://app.lalaundry.xyz';
-
-const NIVELES = {
-  plus: {
-    nombre: 'The Clean Club +',
-    resumen: 'Para quien lava seguido y quiere descuento fijo en todo.',
-    beneficios: [
-      '10% de descuento en todas tus compras',
-      'Promociones exclusivas para miembros todos los meses',
-      'Acceso a preventas y lanzamientos',
-    ],
-  },
-  vip: {
-    nombre: 'The Clean Club VIP',
-    resumen: 'El nivel más completo: mayor descuento, puntos cada mes y atención prioritaria.',
-    destacado: true,
-    beneficios: [
-      '15% de descuento en todas tus compras',
-      'Promociones permanentes exclusivas para miembros VIP',
-      '$75 en puntos Club cada mes',
-      'Acceso anticipado a nuevos servicios y productos',
-      'Comparte tus puntos entre todas las marcas de The Clean Club',
-      'Atención prioritaria',
-    ],
-  },
-};
-
-// slug -> precio. Los slugs son los mismos que entiende
-// /api/crear-suscripcion (ver lib/planes.js en laundry-os).
-const PRECIOS = {
-  'plus-mes': { precio: 59, prueba: true },
-  'plus-anio': { precio: 499 },
-  'vip-mes': { precio: 149, prueba: true },
-  'vip-anio': { precio: 1199 },
-};
 
 // Los planes Founders ya no se ofrecen: se quitó el ?founders=1 con el que
 // se llegaba a ellos. Siguen vivos en MercadoPago y en lib/planes.js de la

@@ -54,15 +54,58 @@ export const ventanaDisponible = (zona, diaSemana, rango) =>
     !DIAS_TRANSPORTE_PROPIO.includes(diaSemana));
 
 // ─── Zonas ────────────────────────────────────────────────────────────────
-// Pedido mínimo sugerido por zona. Es informativo: no bloquea el agendado,
-// solo le dice al cliente a partir de cuánto le conviene el servicio.
-export const MINIMO_POR_ZONA = { A: 300, B: 300, C: 500, D: 500, E: 1000, F: 1000, G: 1000 };
+// A partir de cuánto el transporte es gratis, por zona. No bloquea el
+// agendado: un pedido más chico se acepta, nada más que paga transporte.
+//
+// ESTO ESTABA ESCRITO DOS VECES Y NO COINCIDÍA. Aquí decía C: 500 y E: 1000;
+// la tabla de src/pages/Cobertura.jsx decía C: 300 y E: 500, y es la que lee
+// el cliente antes de agendar. O sea que a alguien de la zona C se le
+// anunciaba transporte gratis desde $300 y el formulario le sugería $500.
+// Los buenos son éstos (A y B $300, C y D $600, el resto $1,000), y ahora la
+// página de cobertura se dibuja de aquí para que no vuelvan a separarse.
+export const MINIMO_POR_ZONA = { A: 300, B: 300, C: 600, D: 600, E: 1000, F: 1000, G: 1000 };
+
+// Lo que cuesta el transporte cuando el pedido no llega al mínimo. Vivía
+// suelto en la página de cobertura, que era el único lugar del sitio que lo
+// sabía: ni el formulario ni el bot podían decirlo.
+export const COSTO_TRANSPORTE_POR_ZONA = { A: 100, B: 100, C: 180, D: 180, E: 250, F: 250, G: 250 };
 
 // Las zonas más lejanas solo reciben lavandería y tenis — la tintorería no se
 // ofrece ahí, así que hay que avisarlo antes de que agenden.
 export const ZONAS_SIN_TINTORERIA = ['F', 'G'];
 export const hayTintoreria = (zona) => !ZONAS_SIN_TINTORERIA.includes(zona);
 export const minimoDeZona = (zona) => MINIMO_POR_ZONA[zona] ?? null;
+export const costoTransporteDeZona = (zona) => COSTO_TRANSPORTE_POR_ZONA[zona] ?? null;
+
+// Qué transporte le toca a un pedido de `subtotal` en esta zona. Con el
+// subtotal en null se contesta la regla, no el cobro: es lo que necesita el
+// bot cuando todavía no sabe qué va a lavar.
+export function transporteDeZona(zona, subtotal = null) {
+  const z = String(zona ?? '').trim().toUpperCase();
+  const minimo = minimoDeZona(z);
+  if (minimo === null) return null;
+  const costo = costoTransporteDeZona(z);
+  if (subtotal === null || !Number.isFinite(Number(subtotal))) {
+    return { zona: z, minimo, costo, gratis: null };
+  }
+  const gratis = Number(subtotal) >= minimo;
+  return { zona: z, minimo, costo: gratis ? 0 : costo, gratis };
+}
+
+// Las zonas agrupadas por la regla que les toca, en el orden de siempre. Es
+// lo que dibuja la tabla de /cobertura: se arma de los números de arriba, no
+// al revés, así que no puede anunciar uno y cobrar otro.
+export function gruposDeTransporte() {
+  const grupos = [];
+  for (const zona of Object.keys(MINIMO_POR_ZONA)) {
+    const minimo = MINIMO_POR_ZONA[zona];
+    const costo = COSTO_TRANSPORTE_POR_ZONA[zona];
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.minimo === minimo && ultimo.costo === costo) ultimo.zonas.push(zona);
+    else grupos.push({ zonas: [zona], minimo, costo });
+  }
+  return grupos;
+}
 
 export const MENSAJE_SIN_TINTORERIA =
   'Importante: en tu zona solo está disponible lavandería y tenis. Por ahora no ofrecemos ' +

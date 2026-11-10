@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import Inicio from './pages/Inicio.jsx';
 import Catalogo from './pages/Catalogo.jsx';
 import Academy from './pages/Academy.jsx';
@@ -18,20 +19,25 @@ const Inbox = lazy(() => import('./pages/Inbox.jsx'));
 export default function App() {
   return (
     <Layout>
-      <Routes>
-        <Route path="/" element={<Inicio />} />
-        <Route path="/catalogo" element={<Catalogo />} />
-        <Route path="/academy" element={<Academy />} />
-        <Route path="/cobertura" element={<Cobertura />} />
-        <Route path="/membresia" element={<Membresia />} />
-        <Route path="/membresia/gracias" element={<MembresiaGracias />} />
-        <Route path="/agendar" element={<Agendar />} />
-        <Route path="/agendar/confirmacion" element={<AgendarConfirmacion />} />
-        {/* Producto pausado: la ruta se queda en pie con el aviso, porque
-            la URL está indexada y compartida. Ver la página. */}
-        <Route path="/tarjeta-regalo" element={<TarjetaRegalo />} />
-        <Route path="/inbox" element={<Suspense fallback={null}><Inbox /></Suspense>} />
-      </Routes>
+      {/* Dentro del Layout y no afuera: si una página truena, el encabezado y
+          el pie siguen en pie y el cliente puede irse a otra parte del sitio
+          en vez de quedarse frente a una pantalla vacía. */}
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<Inicio />} />
+          <Route path="/catalogo" element={<Catalogo />} />
+          <Route path="/academy" element={<Academy />} />
+          <Route path="/cobertura" element={<Cobertura />} />
+          <Route path="/membresia" element={<Membresia />} />
+          <Route path="/membresia/gracias" element={<MembresiaGracias />} />
+          <Route path="/agendar" element={<Agendar />} />
+          <Route path="/agendar/confirmacion" element={<AgendarConfirmacion />} />
+          {/* Producto pausado: la ruta se queda en pie con el aviso, porque
+              la URL está indexada y compartida. Ver la página. */}
+          <Route path="/tarjeta-regalo" element={<TarjetaRegalo />} />
+          <Route path="/inbox" element={<Suspense fallback={null}><Inbox /></Suspense>} />
+        </Routes>
+      </ErrorBoundary>
       <Analytics />
     </Layout>
   );

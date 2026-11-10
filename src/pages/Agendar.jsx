@@ -6,6 +6,7 @@ import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 import { correoValido, sugerenciaCorreo, limpiarCorreo } from '../../server/correo.js';
+import { WHATSAPP_LEGIBLE, whatsappURL } from '../lib/contacto.js';
 import {
   diasDisponibles, formatoPesos, minimoDeZona, hayTintoreria,
   MENSAJE_SIN_TINTORERIA, MENSAJE_UBER_DIRECT,
@@ -35,6 +36,11 @@ const NEXT_LABELS = [
 function cx(...classes) {
   return classes.filter(Boolean).join(' ');
 }
+
+// Un lugar sirve para dibujar el mapa solo si trae coordenadas de verdad. Un
+// registro viejo puede tener place_id y lat/lng en null, y Google no avisa:
+// lanza.
+const tieneCoords = (p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng);
 
 export default function Agendar() {
   const [step, setStep] = useState(0);
@@ -189,26 +195,45 @@ export default function Agendar() {
           fields: ['formatted_address', 'address_components', 'geometry', 'place_id'],
         });
         listener = autocomplete.addListener('place_changed', () => {
-          const p = autocomplete.getPlace();
-          if (!p.geometry?.location) return;
-          const postal = p.address_components?.find((c) => c.types.includes('postal_code'))?.long_name;
-          setDireccion(p.formatted_address || direccionInputRef.current.value);
-          setPlace({
-            lat: p.geometry.location.lat(),
-            lng: p.geometry.location.lng(),
-            placeId: p.place_id,
-          });
-          if (postal) {
-            setCp(postal);
-            checkCoverageFor(postal, {
-              direccion: p.formatted_address || direccionInputRef.current.value,
-              placeId: p.place_id,
-              lat: p.geometry.location.lat(),
-              lng: p.geometry.location.lng(),
-            });
-          } else {
-            setCobertura('idle');
-            setZona(null);
+          // Todo el manejador va envuelto: lo que lance aquí dentro deja el
+          // formulario a medias —con dirección puesta y sin cobertura— y sin
+          // un solo rastro de por qué, porque es un evento de Google y no un
+          // handler de React.
+          try {
+            const p = autocomplete.getPlace();
+            const loc = p?.geometry?.location;
+            if (!loc) return;
+            // `location` a veces son métodos (LatLng) y a veces números
+            // sueltos (LatLngLiteral), según por dónde venga la sugerencia.
+            const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+            const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+            const texto = p.formatted_address || direccionInputRef.current?.value || '';
+            const postal = p.address_components?.find((c) => c.types?.includes('postal_code'))?.long_name;
+
+            setDireccion(texto);
+            // Sin coordenadas buenas se guarda el lugar igual —el place_id
+            // sirve para operaciones— pero sin lat/lng inventadas, que es lo
+            // que tronaba el mapa.
+            setPlace(
+              Number.isFinite(lat) && Number.isFinite(lng)
+                ? { lat, lng, placeId: p.place_id }
+                : { placeId: p.place_id },
+            );
+
+            if (postal) {
+              setCp(postal);
+              checkCoverageFor(postal, {
+                direccion: texto,
+                placeId: p.place_id,
+                ...(Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : {}),
+              });
+            } else {
+              setCobertura('idle');
+              setZona(null);
+            }
+          } catch (err) {
+            console.error('[agendar] no se pudo leer la dirección de Google:', err);
+            setMapsOk(false);
           }
         });
       })
@@ -227,16 +252,36 @@ export default function Agendar() {
   // Render the confirmation map once a verified place has been chosen. Also
   // re-runs on step change so the map reappears if the customer goes back to
   // this step after already picking an address (fresh <div>, same reason).
+  //
+  // AQUÍ ESTABA EL CRASH DE LA PANTALLA EN BLANCO. Esto corre durante el
+  // commit de React: lo que lance aquí no lo cacha nadie, React desmonta el
+  // árbol entero y el cliente se queda viendo el fondo del sitio, justo
+  // después de escribir su dirección. Lanzaba de dos formas:
+  //
+  //   1. `place` con placeId pero sin coordenadas. Pasa con un cliente que
+  //      regresa y cuyo registro viejo guardó place_id sin lat/lng: se hacía
+  //      `center: { lat: undefined, lng: undefined }` y Google tira
+  //      InvalidValueError.
+  //   2. `window.google` puesto pero sin `maps.Map` todavía — el script a
+  //      medio cargar, que es lo normal con red lenta.
+  //
+  // Se piden coordenadas de verdad y se envuelve: un mapa que no se dibuja es
+  // un hueco, no una reserva perdida.
   useEffect(() => {
-    if (step !== 1 || !place || !mapRef.current || !window.google) return;
-    const center = { lat: place.lat, lng: place.lng };
-    const map = new window.google.maps.Map(mapRef.current, {
-      center,
-      zoom: 16,
-      disableDefaultUI: true,
-      zoomControl: true,
-    });
-    new window.google.maps.Marker({ position: center, map });
+    if (step !== 1 || !tieneCoords(place) || !mapRef.current) return;
+    if (!window.google?.maps?.Map) return;
+    try {
+      const center = { lat: place.lat, lng: place.lng };
+      const map = new window.google.maps.Map(mapRef.current, {
+        center,
+        zoom: 16,
+        disableDefaultUI: true,
+        zoomControl: true,
+      });
+      new window.google.maps.Marker({ position: center, map });
+    } catch (err) {
+      console.error('[agendar] no se pudo dibujar el mapa:', err);
+    }
   }, [step, place]);
 
   // Check which day/hora combos already hit the cap so full slots can be
@@ -522,7 +567,7 @@ export default function Agendar() {
                       ¿No aparece tu dirección?
                     </button>
                   </p>
-                  {place ? (
+                  {tieneCoords(place) ? (
                     <div
                       ref={mapRef}
                       style={{ aspectRatio: '16/6', borderRadius: 12, marginBottom: 18 }}
@@ -607,7 +652,16 @@ export default function Agendar() {
                     >
                       Reintentar
                     </button>
-                    , o escríbenos por WhatsApp al 56 4419 8713 y te agendamos nosotros.
+                    , o{' '}
+                    <a
+                      href={whatsappURL('Hola, no pude validar mi dirección en la página.')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'inherit' }}
+                    >
+                      escríbenos por WhatsApp al {WHATSAPP_LEGIBLE}
+                    </a>{' '}
+                    y te agendamos nosotros.
                   </span>
                 </div>
               )}

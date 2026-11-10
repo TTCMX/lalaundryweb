@@ -222,6 +222,21 @@ export default async function handler(req, res) {
       tokens_entrada: r.uso.entrada, tokens_salida: r.uso.salida,
     });
 
+    // Si el bot agendó, la conversación se queda con el nombre y el contacto
+    // de quien agendó. La bandeja del equipo pinta esos campos, así que sin
+    // esto una reserva hecha por el chat aparece como un hilo anónimo y hay
+    // que leerlo entero para saber de quién fue.
+    if (estadoConv.cliente) {
+      await supabase.from('chat_conversaciones')
+        .update({
+          nombre: estadoConv.cliente.nombre || null,
+          telefono: estadoConv.cliente.telefono || null,
+          email: estadoConv.cliente.email || null,
+          tocado_en: new Date().toISOString(),
+        })
+        .eq('id', conv.id);
+    }
+
     const motivo = r.escalar || estadoConv.escalar;
     if (motivo) await escalar(supabase, conv.id, motivo, mensaje);
 
@@ -230,6 +245,7 @@ export default async function handler(req, res) {
       conversacionId: conv.id,
       estado: motivo ? 'humano' : 'bot',
       texto: r.texto,
+      ...(estadoConv.reserva ? { reserva: estadoConv.reserva } : {}),
       costoUSD: Number(costoUSD(r.uso).toFixed(5)),
     });
   } catch (err) {
