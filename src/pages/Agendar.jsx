@@ -6,64 +6,23 @@ import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 import { correoValido, sugerenciaCorreo, limpiarCorreo } from '../../server/correo.js';
+import {
+  diasDisponibles, formatoPesos, minimoDeZona, hayTintoreria,
+  MENSAJE_SIN_TINTORERIA, MENSAJE_UBER_DIRECT,
+} from '../../server/agenda.js';
 
 // Seguimiento: vive en la app de operaciones y pide el teléfono.
 const URL_MI_ORDEN = 'https://app.lalaundry.xyz/miorden';
 
 const STEP_LABELS = ['Teléfono', 'Dirección', 'Nombre', 'Horario', 'Detalles', 'Listo'];
 const LAST_STEP = STEP_LABELS.length - 1;
-const DIAS_HORIZON = 6;
-const MIN_LEAD_HOURS = 2;
-// Toda recolección se hace con Uber Direct, en ventanas de 2 horas iguales
-// para cualquier zona: domingo a jueves de 10am a 10pm, y viernes solo de
-// 10am a 2pm. Sábado no hay servicio.
-function buildHourRanges(startHour, endHour, step = 1) {
-  const ranges = [];
-  for (let h = startHour; h + step <= endHour; h += step) {
-    ranges.push({ start: h, end: h + step });
-  }
-  return ranges;
-}
-const DIAS_SEMANA = [0, 1, 2, 3, 4]; // domingo a jueves
-const DIA_VIERNES = 5;
-const RANGOS_SEMANA = buildHourRanges(10, 22, 2); // 10-12, 12-2, ... 8-10pm
-const RANGOS_VIERNES = buildHourRanges(10, 14, 2); // 10-12, 12-2
 
-// La única excepción: en A y B la ventana de 8 a 10pm la cubre nuestro propio
-// equipo, los mismos días que ya la cubría la ruta de la tarde. En esa
-// ventana el horario sí es un compromiso, no una preferencia.
-const ZONAS_TRANSPORTE_PROPIO = ['A', 'B'];
-const DIAS_TRANSPORTE_PROPIO = [0, 1, 3, 4]; // domingo, lunes, miércoles, jueves
-const VENTANA_PROPIA = { start: 20, end: 22 };
-const esVentanaNocturna = (rango) =>
-  rango.start === VENTANA_PROPIA.start && rango.end === VENTANA_PROPIA.end;
-const esTransportePropio = (zona, weekdayIndex, rango) =>
-  ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
-  DIAS_TRANSPORTE_PROPIO.includes(weekdayIndex) &&
-  esVentanaNocturna(rango);
+// Las reglas de agenda —qué días, qué ventanas, qué zonas— viven en
+// server/agenda.js. Salieron de aquí porque las necesitan tres cosas: este
+// formulario, el selector de entrega de /miorden y el bot del chat. Tres
+// copias se despegarían y el bot acabaría ofreciendo horarios que este
+// formulario no acepta.
 
-// En A y B la ventana de 8 a 10pm es nuestra, así que los días sin ruta de
-// la tarde (el martes) no se ofrece en vez de caer a Uber Direct de noche.
-// En las demás zonas esa ventana siempre fue de Uber Direct y no cambia.
-const ventanaDisponible = (zona, weekdayIndex, rango) =>
-  !(ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
-    esVentanaNocturna(rango) &&
-    !DIAS_TRANSPORTE_PROPIO.includes(weekdayIndex));
-
-// Pedido mínimo sugerido por zona. Es informativo: no bloquea el agendado,
-// solo le dice al cliente a partir de cuánto le conviene el servicio.
-const MINIMO_POR_ZONA = { A: 300, B: 300, C: 500, D: 500, E: 1000, F: 1000, G: 1000 };
-const formatMXN = (n) => `$${n.toLocaleString('es-MX')}`;
-
-// Las zonas más lejanas solo reciben lavandería y tenis — la tintorería no se
-// ofrece ahí, así que hay que avisarlo antes de que agenden.
-const ZONAS_SIN_TINTORERIA = ['F', 'G'];
-const SIN_TINTORERIA_MESSAGE =
-  'Importante: en tu zona solo está disponible lavandería y tenis. Por ahora no ofrecemos ' +
-  'tintorería (sacos, vestidos, abrigos y demás prendas de tintorería).';
-const UBER_DIRECT_MESSAGE =
-  '¡Tenemos cobertura en tu zona! La recolección y entrega de tu pedido se hace con un ' +
-  'proveedor externo (Uber Direct).';
 const NEXT_LABELS = [
   'Continuar',
   'Continuar',
@@ -75,78 +34,6 @@ const NEXT_LABELS = [
 
 function cx(...classes) {
   return classes.filter(Boolean).join(' ');
-}
-
-function formatHour12(hour) {
-  const period = hour < 12 ? 'am' : 'pm';
-  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
-  return `${hour12}${period}`;
-}
-
-function formatHoraRange({ start, end }) {
-  return `${formatHour12(start)}-${formatHour12(end)}`;
-}
-
-// Local-time YYYY-MM-DD (not toISOString(), which converts to UTC and can
-// shift the date depending on the visitor's timezone).
-function toISODate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-// Slots less than MIN_LEAD_HOURS away aren't offered — for any day other
-// than today every slot is already well past that, so this only ever
-// filters today's remaining options.
-function horasFor(date, weekdayIndex, zona) {
-  if (!zona) return [];
-  let ranges;
-  if (DIAS_SEMANA.includes(weekdayIndex)) ranges = RANGOS_SEMANA;
-  else if (weekdayIndex === DIA_VIERNES) ranges = RANGOS_VIERNES;
-  else return []; // sábado
-  const cutoff = new Date(Date.now() + MIN_LEAD_HOURS * 60 * 60 * 1000);
-  return ranges
-    .filter((range) => {
-      if (!ventanaDisponible(zona, weekdayIndex, range)) return false;
-      const slotStart = new Date(date);
-      slotStart.setHours(range.start, 0, 0, 0);
-      return slotStart >= cutoff;
-    })
-    .map((range) => ({
-      ...range,
-      label: formatHoraRange(range),
-      propio: esTransportePropio(zona, weekdayIndex, range),
-    }));
-}
-
-// Zone-less (zona === null, e.g. coverage not resolved yet) yields no days.
-function buildDiaOptions(zona) {
-  const days = [];
-  if (!zona) return days;
-  const cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-  let scanned = 0;
-  while (days.length < DIAS_HORIZON && scanned < 60) {
-    scanned++;
-    const weekdayIndex = cursor.getDay();
-    const horas = horasFor(cursor, weekdayIndex, zona);
-    if (horas.length) {
-      const weekday = new Intl.DateTimeFormat('es-MX', { weekday: 'long' }).format(cursor);
-      const month = new Intl.DateTimeFormat('es-MX', { month: 'long' }).format(cursor);
-      const day = cursor.getDate();
-      days.push({
-        weekdayIndex,
-        weekdayLabel: weekday.charAt(0).toUpperCase() + weekday.slice(1),
-        short: `${day} ${month.slice(0, 3)}`,
-        fullLabel: `${weekday} ${day} de ${month}`,
-        isoDate: toISODate(cursor),
-        horas,
-      });
-    }
-    cursor.setDate(cursor.getDate() + 1);
-  }
-  return days;
 }
 
 export default function Agendar() {
@@ -168,7 +55,7 @@ export default function Agendar() {
   // siempre puede capturar su código postal a mano y seguir.
   const [cpManual, setCpManual] = useState(false);
   const [nombre, setNombre] = useState('');
-  const DIAS = useMemo(() => buildDiaOptions(zona), [zona]);
+  const DIAS = useMemo(() => diasDisponibles(zona), [zona]);
   const [diaSel, setDiaSel] = useState(0);
   const [horaSel, setHoraSel] = useState(0);
   const HORAS = DIAS[diaSel]?.horas || [];
@@ -684,11 +571,11 @@ export default function Agendar() {
                     <CheckIcon />
                   </span>
                   <span className={styles.successText}>
-                    {UBER_DIRECT_MESSAGE}
+                    {MENSAJE_UBER_DIRECT}
                     {ZONAS_TRANSPORTE_PROPIO.includes(zona) &&
                       ' Las recolecciones de 8 a 10pm las hace nuestro propio equipo.'}
-                    {MINIMO_POR_ZONA[zona] &&
-                      ` Pedido mínimo sugerido en tu zona: ${formatMXN(MINIMO_POR_ZONA[zona])}.`}
+                    {minimoDeZona(zona) &&
+                      ` Pedido mínimo sugerido en tu zona: ${formatoPesos(minimoDeZona(zona))}.`}
                   </span>
                 </div>
               )}
@@ -697,13 +584,13 @@ export default function Agendar() {
                   <span className={styles.successIcon}>
                     <CheckIcon />
                   </span>
-                  <span className={styles.successText}>{UBER_DIRECT_MESSAGE}</span>
+                  <span className={styles.successText}>{MENSAJE_UBER_DIRECT}</span>
                 </div>
               )}
               {(cobertura === 'externo' ||
-                (cobertura === 'covered' && ZONAS_SIN_TINTORERIA.includes(zona))) && (
+                (cobertura === 'covered' && !hayTintoreria(zona))) && (
                 <div className={styles.avisoBanner}>
-                  <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
+                  <span className={styles.avisoText}>{MENSAJE_SIN_TINTORERIA}</span>
                 </div>
               )}
               {cobertura === 'error' && (
@@ -812,9 +699,9 @@ export default function Agendar() {
                   </button>
                 ))}
               </div>
-              {ZONAS_SIN_TINTORERIA.includes(zona) && (
+              {!hayTintoreria(zona) && (
                 <div className={styles.avisoBanner} style={{ marginTop: 0, marginBottom: 16 }}>
-                  <span className={styles.avisoText}>{SIN_TINTORERIA_MESSAGE}</span>
+                  <span className={styles.avisoText}>{MENSAJE_SIN_TINTORERIA}</span>
                 </div>
               )}
               <div className={styles.horasGrid}>

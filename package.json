@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test/cors.test.mjs && node test/rateLimit.test.mjs && node test/siteUrl.test.mjs && node test/preferencia.test.mjs && node test/correo.test.mjs && node test/envioCorreo.test.mjs"
+    "test": "node test/cors.test.mjs && node test/rateLimit.test.mjs && node test/siteUrl.test.mjs && node test/preferencia.test.mjs && node test/correo.test.mjs && node test/envioCorreo.test.mjs && node test/agenda.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
