@@ -120,9 +120,11 @@ export default function Chat({ onCerrar }) {
     }
   };
 
-  // La pose de la mascota ES el estado del chat.
+  // La pose de la mascota ES el estado del chat. Y cuando la conversación ya
+  // la lleva una persona, quien aparece es Natalia: Burbu diciendo "te
+  // contesta una persona" se leía raro, porque Burbu ES el bot.
   const pose = enviando ? 'pensando'
-    : estado === 'humano' ? 'equipo'
+    : estado === 'humano' ? 'persona'
       : agendado ? 'listo'
         : mensajes.length <= 1 ? 'saluda' : 'normal';
 
@@ -138,7 +140,9 @@ export default function Chat({ onCerrar }) {
       <div className={styles.encabezado}>
         <Mascota estado={pose} size={62} className={styles.retrato} />
         <div className={styles.titulo}>
-          <div className={styles.nombre}>Burbu · La Laundry</div>
+          <div className={styles.nombre}>
+            {estado === 'humano' ? 'Natalia · La Laundry' : 'Burbu · La Laundry'}
+          </div>
           <div className={styles.estado}>
             <span className={`${styles.punto} ${estado === 'humano' ? styles.puntoHumano : ''}`} />
             {leyenda}
@@ -156,7 +160,7 @@ export default function Chat({ onCerrar }) {
           return (
             <div key={i} className={`${styles.fila} ${mio ? styles.filaCliente : ''}`}>
               {!mio && (primero
-                ? <Mascota estado={m.rol === 'persona' ? 'equipo' : 'normal'} size={30} className={styles.avatar} decorativa />
+                ? <Mascota estado={m.rol === 'persona' ? 'persona' : 'normal'} size={30} className={styles.avatar} decorativa />
                 : <span className={styles.avatarHueco} />)}
               <div className={`${styles.burbuja} ${mio ? styles.deCliente : m.rol === 'persona' ? styles.dePersona : styles.deBurbu}`}>
                 {m.rol === 'persona' && <span className={styles.firma}>La Laundry</span>}
@@ -225,7 +229,9 @@ export default function Chat({ onCerrar }) {
       </form>
 
       <div className={styles.pie}>
-        Burbu es un asistente automático. Si algo se complica, te pasa con una persona.
+        {estado === 'humano'
+          ? 'Ahora te contesta una persona del equipo.'
+          : 'Burbu es un asistente automático. Si algo se complica, te pasa con una persona.'}
       </div>
     </div>
   );

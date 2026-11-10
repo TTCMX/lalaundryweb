@@ -1,6 +1,6 @@
 import styles from './Mascota.module.css';
 
-// Burbu, la mascota de La Laundry.
+// Las mascotas de La Laundry.
 //
 // POR QUÉ UNA MASCOTA Y NO UN AVATAR: el chat contesta precios y agenda
 // recolecciones, y la diferencia entre "un formulario que responde" y
@@ -14,7 +14,19 @@ import styles from './Mascota.module.css';
 // unos 12 KB y el chat entero se baja bajo demanda (ver Layout.jsx), así que
 // nadie que no abra el chat las paga.
 //
-// Las poses salen de la hoja de personaje. Si llegan más, se agregan aquí y
+// SON TRES Y CADA UNA SIGNIFICA UNA COSA. Esa es la regla, y es lo que las
+// salva de ser adorno:
+//
+//   Burbu    el asistente del chat. Contesta, consulta y agenda.
+//   Natalia  una PERSONA del equipo. Solo aparece donde de verdad hay
+//            alguien del otro lado: cuando el chat se escala y en la bandeja.
+//   Tito     la RECOLECCIÓN y la entrega. Aparece donde se habla de que
+//            pasamos por tus cosas: la confirmación y la cobertura.
+//
+// Mezclarlas rompe el significado: Burbu diciendo "te contesta una persona"
+// era justo lo que pasaba antes, y se leía raro sin saber por qué.
+//
+// Las poses salen de las hojas de personaje. Si llegan más, se agregan aquí y
 // en public/mascota/ y nada más.
 const POSES = {
   // Esperando. Es el dibujo principal, el del corazón con los dedos.
@@ -27,6 +39,14 @@ const POSES = {
   listo: { archivo: 'burbu-listo.png', alt: 'Burbu con el pedido listo', anim: 'listo' },
   // Te paso con alguien: señalando hacia un lado.
   equipo: { archivo: 'burbu-equipo.png', alt: 'Burbu pasando la conversación al equipo', anim: 'viva' },
+
+  // Natalia: una persona del equipo.
+  persona: { archivo: 'natalia-telefono.png', alt: 'Natalia, del equipo de La Laundry', anim: 'viva' },
+  personaLista: { archivo: 'natalia-lista.png', alt: 'Natalia revisando la lista', anim: 'viva' },
+
+  // Tito: la recolección y la entrega.
+  camion: { archivo: 'tito-saluda.png', alt: 'Tito, la camioneta de La Laundry', anim: 'viva' },
+  camionMapa: { archivo: 'tito-mapa.png', alt: 'Tito con el mapa de la zona', anim: 'viva' },
 };
 
 export default function Mascota({ estado = 'normal', size = 48, className = '', decorativa = false }) {

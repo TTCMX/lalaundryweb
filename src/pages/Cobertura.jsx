@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHero from '../components/PageHero.jsx';
 import { CheckIcon, XIcon } from '../components/Icon.jsx';
+import Mascota from '../components/Mascota.jsx';
 import styles from './Cobertura.module.css';
 import {
   gruposDeTransporte, transporteDeZona, formatoPesos, hayTintoreria,
@@ -83,9 +84,10 @@ export default function Cobertura() {
 
           {status === 'covered' && (
             <div className={styles.resultBanner}>
-              <span className={styles.resultIcon}>
-                <CheckIcon />
-              </span>
+              {/* Tito con el mapa: la pregunta era "¿llegan a mi zona?" y la
+                  respuesta es quien llega. Va EN LUGAR de la palomita verde,
+                  no junto a ella: dos símbolos diciendo "sí" se estorban. */}
+              <Mascota estado="camionMapa" size={58} decorativa />
               <div>
                 <p className={styles.resultTitle}>Tenemos cobertura — estás en la zona {zona}.</p>
                 {info && (

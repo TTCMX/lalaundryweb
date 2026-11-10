@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Mascota from '../components/Mascota.jsx';
 
 // La bandeja del equipo: las conversaciones del chat que esperan a alguien.
 //
@@ -123,6 +124,7 @@ export default function Inbox() {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '28px 20px 60px', fontFamily: FUENTE }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+        <Mascota estado="personaLista" size={44} decorativa />
         <h1 style={{ fontSize: 22, color: C.tinta, margin: 0 }}>Conversaciones</h1>
         <span style={{ fontSize: 13, color: esperando.length ? C.coral : C.navy, fontWeight: esperando.length ? 700 : 400 }}>
           {esperando.length ? `${esperando.length} esperando` : 'nadie esperando'}

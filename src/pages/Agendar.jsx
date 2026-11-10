@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PlaceholderImage from '../components/PlaceholderImage.jsx';
 import { CheckIcon, XIcon } from '../components/Icon.jsx';
+import Mascota from '../components/Mascota.jsx';
 import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
@@ -871,12 +872,20 @@ export default function Agendar() {
 
           {step === 5 && (
             <div className={styles.listo}>
-              <div className={styles.listoIcon}>
-                <CheckIcon size={28} />
+              {/* Tito y no la palomita: quien va a pasar por las cosas es la
+                  camioneta, y el cliente acaba de agendar precisamente eso.
+                  La palomita ya la dan los seis pasos de arriba. */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                <Mascota estado="camion" size={96} decorativa />
               </div>
               <h2 className={styles.listoTitle}>¡Listo! Tu recolección está agendada.</h2>
               <p className={styles.listoText}>
-                Te avisaremos por SMS al número registrado cuando el repartidor esté en camino.
+                {/* Decía "te avisaremos por SMS" y el sistema no manda SMS:
+                    manda correo. Prometer un aviso que no existe es que el
+                    cliente se quede esperando junto a la puerta. */}
+                {email
+                  ? `Te mandamos la confirmación a ${email}.`
+                  : 'Guarda tu número: con él puedes ver el estatus de tu pedido cuando quieras.'}
               </p>
               <div className={styles.resumen}>
                 <div className={styles.resumenRow}>
