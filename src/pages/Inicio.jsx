@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import styles from './Inicio.module.css';
+import { filasPromoTenis } from '../../server/precios-publicos.js';
 
 const PASOS = [
   { n: '1', titulo: 'Agenda', desc: 'Ingresa tu dirección, teléfono y horario preferido.' },
@@ -40,14 +41,10 @@ const PROMOS_MEMBRESIA = [
   },
 ];
 
-const PROMO_TENIS = [
-  { pares: '1', precio: '$150', transporte: '$100' },
-  { pares: '2', precio: '$280', transporte: '$20' },
-  { pares: '3', precio: '$390', transporte: 'Gratis' },
-  { pares: '4', precio: '$480', transporte: 'Gratis' },
-  { pares: '5', precio: '$550', transporte: 'Gratis' },
-  { pares: '6 o más', precio: '$100 por par', transporte: 'Gratis' },
-];
+// Se arma de los mismos números que cobra la caja (ver
+// server/precios-publicos.js): así no se puede anunciar un precio y cobrar
+// otro, que es justo lo que pasaba.
+const PROMO_TENIS = filasPromoTenis();
 
 export default function Inicio() {
   return (

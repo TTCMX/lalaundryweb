@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import PageHero from '../components/PageHero.jsx';
 import styles from './Catalogo.module.css';
+import { resumenTenis } from '../../server/precios-publicos.js';
 
 const PROCESO = [
   { n: '1', titulo: 'Recolectamos' },
@@ -16,7 +17,10 @@ const CATEGORIAS = [
     items: [
       { nombre: 'Ropa y ropa de cama', precio: '$40', detalle: 'Por kg' },
       { nombre: 'Edredón', precio: '$160', detalle: 'Matrimonial +$10, Queen +$20, King +$30, Pluma +$55' },
-      { nombre: 'Tenis', precio: '$150', detalle: '' },
+      // El catálogo decía "$150" a secas, así que quien lo leía creía que
+      // tres pares costaban $450 cuando la caja cobra $390. El detalle sale
+      // de la misma tabla que cobra (ver server/precios-publicos.js).
+      { nombre: 'Tenis', precio: '$150', detalle: `Por par. ${resumenTenis()}` },
       { nombre: 'Gorras', precio: '$80', detalle: 'Gamuza y ante +$20' },
       { nombre: 'Almohada', precio: '$170', detalle: 'Queen y King +$30' },
       { nombre: 'Mochila', precio: '$140', detalle: 'Maleta o grande +$30, cuero +$40' },
