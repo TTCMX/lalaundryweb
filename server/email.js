@@ -11,6 +11,24 @@ const COLOR_BORDER = '#cdeaec';
 const FONT_DISPLAY = "'Abril Fatface', Georgia, 'Times New Roman', serif";
 const FONT_BODY = "'Work Sans', Arial, Helvetica, sans-serif";
 
+// Resultados posibles de un envío. Son tres cosas que no se parecen en nada
+// y antes salían las tres como `skipped: true`:
+//
+//   sin-correo     el cliente no dejó uno. Normal, no hay nada que hacer.
+//   sin-llave      falta RESEND_API_KEY. Configuración rota: no sale NINGÚN
+//                  correo y nadie se entera.
+//   rechazo-resend Resend lo rechazó: dominio sin verificar, llave vencida,
+//                  destinatario inválido.
+//
+// Quien llama necesita distinguirlas, porque las dos últimas se atienden hoy
+// y la primera no. `enviado` es true solo cuando de verdad salió.
+export const SIN_CORREO = 'sin-correo';
+export const SIN_LLAVE = 'sin-llave';
+export const RECHAZO = 'rechazo-resend';
+
+// Un fallo es lo que hay que ir a arreglar; no dejar correo no lo es.
+export const esFalla = (r) => !!r && !r.enviado && r.motivo !== SIN_CORREO;
+
 function getResend() {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -18,6 +36,15 @@ function getResend() {
     return null;
   }
   return new Resend(apiKey);
+}
+
+// A dónde contesta el cliente. Sin WhatsApp como columna operativa, el correo
+// ES el canal de vuelta: si el Reply-To apunta a un buzón que nadie lee, la
+// respuesta del cliente se pierde. Cae al remitente si no se configura, que
+// al menos es una dirección real.
+function replyTo() {
+  const buzon = process.env.REPLY_TO_EMAIL?.trim();
+  return buzon || undefined;
 }
 
 function pagoLabelFor(booking) {
@@ -94,25 +121,99 @@ export function formatBookingHtml(booking) {
 }
 
 export async function sendBookingConfirmationEmail(booking) {
-  if (!booking.email) return { skipped: true, reason: 'no-email' };
+  if (!booking.email) return { enviado: false, motivo: SIN_CORREO };
 
   const resend = getResend();
-  if (!resend) return { skipped: true, reason: 'no-api-key' };
+  if (!resend) return { enviado: false, motivo: SIN_LLAVE };
 
   const from = process.env.RESEND_FROM_EMAIL || 'La Laundry <onboarding@resend.dev>';
 
+  return mandar(resend, {
+    from,
+    replyTo: replyTo(),
+    to: booking.email,
+    subject: '¡Tu recolección con La Laundry está agendada!',
+    html: formatBookingHtml(booking),
+  }, 'confirmation');
+}
+
+// El SDK de Resend NO lanza excepción cuando la API rechaza un envío:
+// devuelve `{ data: null, error: {...} }` y sigue como si nada. Un try/catch
+// solo atrapa fallas de red.
+//
+// Por eso el dominio sin verificar, la llave vencida y el destinatario
+// inválido —los tres motivos reales por los que un correo no llega— pasaban
+// derecho al camino de éxito, y quien llamaba marcaba la reserva como
+// "confirmación enviada". La base decía que el correo salió y nunca salió,
+// que es peor que no tener registro: una consulta de reservas sin confirmar
+// devolvía cero mientras nadie recibía nada.
+//
+// Hay que mirar `error` del resultado, no solo atrapar.
+async function mandar(resend, mensaje, queEs) {
   try {
-    await resend.emails.send({
-      from,
-      to: booking.email,
-      subject: '¡Tu recolección con La Laundry está agendada!',
-      html: formatBookingHtml(booking),
-    });
-    return { skipped: false };
+    const { data, error } = await resend.emails.send(mensaje);
+    if (error) {
+      console.error(`[email] Resend rechazó ${queEs}:`, error.name, error.message);
+      return { enviado: false, motivo: RECHAZO, error: error.message || error.name };
+    }
+    return { enviado: true, id: data?.id };
   } catch (err) {
-    console.error('[email] failed to send confirmation:', err);
-    return { skipped: true, reason: 'send-failed', error: err.message };
+    // Esto sí es una falla de red o del proceso.
+    console.error(`[email] no se pudo mandar ${queEs}:`, err);
+    return { enviado: false, motivo: RECHAZO, error: err.message };
   }
+}
+
+// Aviso al dueño cuando un correo al CLIENTE no salió.
+//
+// Es el único mecanismo que convierte "falla silenciosa" en "alguien se
+// entera": sin esto, un dominio sin verificar o una llave vencida dejan de
+// mandar confirmaciones y lo único que queda es un console.error en Vercel
+// que nadie lee.
+//
+// Best-effort a propósito: si este también falla, se anota y ya. La reserva
+// del cliente nunca se cae por un correo.
+export async function avisarFalloDeCorreo(booking, resultado) {
+  if (!esFalla(resultado)) return { enviado: false, motivo: 'sin-falla' };
+
+  const destinos = (process.env.OWNER_NOTIFICATION_EMAIL || '')
+    .split(',').map((e) => e.trim()).filter(Boolean);
+  if (!destinos.length) return { enviado: false, motivo: 'no-owner-email' };
+
+  const resend = getResend();
+  // Si el motivo es que no hay llave, este aviso tampoco puede salir. Queda
+  // en los logs, que es todo lo que se puede hacer desde aquí.
+  if (!resend) {
+    console.error('[email] no se pudo avisar del fallo: tampoco hay llave de Resend');
+    return { enviado: false, motivo: SIN_LLAVE };
+  }
+
+  const from = process.env.RESEND_FROM_EMAIL || 'La Laundry <onboarding@resend.dev>';
+  const QUE_PASO = {
+    [SIN_LLAVE]: 'Falta RESEND_API_KEY en Vercel. No está saliendo NINGÚN correo.',
+    [RECHAZO]: 'Resend rechazó el envío. Suele ser el dominio sin verificar, la llave vencida o un correo mal escrito.',
+  };
+
+  return mandar(resend, {
+    from,
+    to: destinos,
+    subject: `⚠️ No salió el correo de confirmación — ${booking.direccion || booking.id}`,
+    html: renderEmailShell({
+        eyebrow: 'Revisar',
+        heading: 'Un cliente no recibió su confirmación',
+        intro: QUE_PASO[resultado.motivo] || 'El envío no se completó.',
+        rows: [
+          { label: 'Reserva', value: booking.id },
+          { label: 'Cliente', value: booking.nombre || 'No proporcionado' },
+          { label: 'Correo', value: booking.email || 'No proporcionado' },
+          { label: 'Teléfono', value: booking.telefono },
+          { label: 'Dirección', value: booking.direccion },
+          { label: 'Motivo', value: resultado.motivo },
+          { label: 'Detalle', value: resultado.error || '—' },
+        ],
+      footerNote: 'La Laundry — aviso automático. La reserva sí se guardó.',
+    }),
+  }, 'fallo de correo');
 }
 
 export function formatOwnerNotificationHtml(booking) {
@@ -140,25 +241,19 @@ export async function sendOwnerBookingNotification(booking) {
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
-  if (!ownerEmails.length) return { skipped: true, reason: 'no-owner-email' };
+  if (!ownerEmails.length) return { enviado: false, motivo: 'no-owner-email' };
 
   const resend = getResend();
-  if (!resend) return { skipped: true, reason: 'no-api-key' };
+  if (!resend) return { enviado: false, motivo: SIN_LLAVE };
 
   const from = process.env.RESEND_FROM_EMAIL || 'La Laundry <onboarding@resend.dev>';
 
-  try {
-    await resend.emails.send({
-      from,
-      to: ownerEmails,
-      subject: `Nueva recolección: ${booking.direccion}`,
-      html: formatOwnerNotificationHtml(booking),
-    });
-    return { skipped: false };
-  } catch (err) {
-    console.error('[email] failed to send owner notification:', err);
-    return { skipped: true, reason: 'send-failed', error: err.message };
-  }
+  return mandar(resend, {
+    from,
+    to: ownerEmails,
+    subject: `Nueva recolección: ${booking.direccion}`,
+    html: formatOwnerNotificationHtml(booking),
+  }, 'owner notification');
 }
 
 // ─── TARJETAS DE REGALO ──────────────────────────────────────────────────

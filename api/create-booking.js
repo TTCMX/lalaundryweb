@@ -1,8 +1,12 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
-import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
+import {
+  sendBookingConfirmationEmail, sendOwnerBookingNotification,
+  avisarFalloDeCorreo, esFalla,
+} from '../server/email.js';
 import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
 import { notifyOpsApp } from '../server/opsApp.js';
 import { normalizePhone } from '../server/phone.js';
+import { correoValido, limpiarCorreo } from '../server/correo.js';
 import { rechazar } from '../server/cors.js';
 import { limitar } from '../server/rateLimit.js';
 
@@ -38,6 +42,15 @@ export default async function handler(req, res) {
     return;
   }
 
+  // El correo también se valida aquí y no solo en el formulario: este
+  // endpoint es público y el formulario no es la única forma de llegar.
+  // Una dirección mal escrita deja la reserva sin confirmación y sin avisos.
+  const correo = limpiarCorreo(email);
+  if (!correoValido(correo)) {
+    res.status(400).json({ error: 'correo-invalido' });
+    return;
+  }
+
   try {
     if (await isSlotFull(diaLabel, horaLabel, bookingId)) {
       res.status(409).json({
@@ -54,7 +67,7 @@ export default async function handler(req, res) {
       direccion,
       cp: cp || null,
       telefono: normalizePhone(telefono),
-      email: email || null,
+      email: correo,
       dia_label: diaLabel,
       hora_label: horaLabel,
       fecha_recoleccion: fecha || null,
@@ -112,13 +125,27 @@ export default async function handler(req, res) {
       booking = data;
     }
 
-    const emailResult = await sendBookingConfirmationEmail(booking);
-    if (!emailResult.skipped) {
-      await supabase
-        .from('bookings')
-        .update({ email_confirmacion_enviado: true })
-        .eq('id', booking.id);
+    // El resultado del envío se guarda SIEMPRE, salga o no. Antes solo se
+    // marcaba el éxito, así que una reserva sin correo, una con la llave
+    // ausente y una que Resend rechazó quedaban idénticas en la base y el
+    // único rastro era un console.error que nadie lee.
+    const resultadoCorreo = await sendBookingConfirmationEmail(booking);
+    await supabase
+      .from('bookings')
+      .update({
+        email_confirmacion_enviado: resultadoCorreo.enviado,
+        email_error: resultadoCorreo.enviado ? null : resultadoCorreo.motivo,
+        email_intentado_en: new Date().toISOString(),
+      })
+      .eq('id', booking.id);
+
+    // Y si no salió por algo que haya que arreglar, se avisa. Sin esto, la
+    // configuración se puede romper y seguir aceptando reservas durante
+    // semanas sin que nadie lo note.
+    if (esFalla(resultadoCorreo)) {
+      await avisarFalloDeCorreo(booking, resultadoCorreo);
     }
+
     await sendOwnerBookingNotification(booking);
 
     // Never let a hiccup here (ops app down, missing columns, etc.) turn an

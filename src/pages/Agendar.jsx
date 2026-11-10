@@ -5,6 +5,7 @@ import { CheckIcon, XIcon } from '../components/Icon.jsx';
 import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
+import { correoValido, sugerenciaCorreo, limpiarCorreo } from '../../server/correo.js';
 
 // Seguimiento: vive en la app de operaciones y pide el teléfono.
 const URL_MI_ORDEN = 'https://app.lalaundry.xyz/miorden';
@@ -435,7 +436,7 @@ export default function Agendar() {
         lng: place?.lng,
       });
     }
-    if (step === 2) saveLeadProgress({ nombre, email: email || undefined });
+    if (step === 2) saveLeadProgress({ nombre, email: limpiarCorreo(email) || undefined });
     if (step === 3) {
       saveLeadProgress({ diaLabel: DIAS[diaSel].fullLabel, horaLabel: HORAS[horaSel].label });
     }
@@ -469,7 +470,7 @@ export default function Agendar() {
     const payload = {
       bookingId: bookingIdRef.current,
       telefono,
-      email: email || undefined,
+      email: limpiarCorreo(email) || undefined,
       direccion,
       cp,
       nombre,
@@ -514,7 +515,11 @@ export default function Agendar() {
   const selectedHoraCount = slotCounts[DIAS[diaSel]?.fullLabel]?.[HORAS[horaSel]?.label] || 0;
   const requiresTelefono = step === 0 && !telefono;
   const requiresDireccion = step === 1 && (!direccion || cobertura !== 'covered');
-  const requiresNombre = step === 2 && !nombre.trim();
+  // El correo dejó de ser opcional: es el canal por el que el cliente se
+  // entera de todo, y sin él la reserva nace muda.
+  const correoMal = step === 2 && email.trim().length > 0 && !correoValido(email);
+  const sugerencia = step === 2 ? sugerenciaCorreo(email) : null;
+  const requiresNombre = step === 2 && (!nombre.trim() || !correoValido(email));
   const requiresHorario = step === 3 && selectedHoraCount >= slotMax;
   // El vehículo se pide por adelantado, así que sin esta respuesta la
   // recolección puede llegar en moto a un pedido que no cabe.
@@ -747,7 +752,7 @@ export default function Agendar() {
                 onChange={(e) => setNombre(e.target.value)}
                 placeholder="Ej. Juan Pérez"
               />
-              <label className={styles.label}>Correo (opcional)</label>
+              <label className={styles.label}>Correo</label>
               <input
                 type="email"
                 className={styles.input}
@@ -756,6 +761,27 @@ export default function Agendar() {
                 placeholder="tu@correo.com"
                 style={{ marginBottom: 0 }}
               />
+              {/* Ahí llegan la confirmación y los avisos del pedido, que es
+                  todo el seguimiento ahora que WhatsApp no es la columna
+                  operativa. Sin correo, el cliente se queda sin saber nada. */}
+              <p className={styles.stepSubtext} style={{ marginTop: 8, marginBottom: 0 }}>
+                {correoMal
+                  ? 'Revisa el correo: parece que falta algo.'
+                  : 'Ahí te mandamos la confirmación y los avisos de tu pedido.'}
+              </p>
+              {sugerencia && (
+                <button
+                  type="button"
+                  onClick={() => setEmail(sugerencia)}
+                  style={{
+                    marginTop: 8, background: 'none', border: 'none', padding: 0,
+                    font: 'inherit', fontSize: 14, color: '#506d6b',
+                    textDecoration: 'underline', cursor: 'pointer',
+                  }}
+                >
+                  ¿Quisiste decir {sugerencia}?
+                </button>
+              )}
             </>
           )}
 

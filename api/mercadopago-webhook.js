@@ -1,6 +1,9 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { getPayment } from '../server/mercadopago.js';
-import { sendBookingConfirmationEmail, sendOwnerBookingNotification } from '../server/email.js';
+import {
+  sendBookingConfirmationEmail, sendOwnerBookingNotification,
+  avisarFalloDeCorreo, esFalla,
+} from '../server/email.js';
 import { notifyOpsApp } from '../server/opsApp.js';
 
 const STATUS_MAP = {
@@ -55,13 +58,21 @@ export default async function handler(req, res) {
     if (error) throw error;
 
     if (pagoStatus === 'pagado' && !booking.email_confirmacion_enviado) {
-      const emailResult = await sendBookingConfirmationEmail(booking);
-      if (!emailResult.skipped) {
-        await supabase
-          .from('bookings')
-          .update({ email_confirmacion_enviado: true })
-          .eq('id', booking.id);
+      // Mismo registro que en create-booking: el resultado se guarda salga o
+      // no, y un fallo que haya que arreglar se avisa.
+      const resultadoCorreo = await sendBookingConfirmationEmail(booking);
+      await supabase
+        .from('bookings')
+        .update({
+          email_confirmacion_enviado: resultadoCorreo.enviado,
+          email_error: resultadoCorreo.enviado ? null : resultadoCorreo.motivo,
+          email_intentado_en: new Date().toISOString(),
+        })
+        .eq('id', booking.id);
+      if (esFalla(resultadoCorreo)) {
+        await avisarFalloDeCorreo(booking, resultadoCorreo);
       }
+
       await sendOwnerBookingNotification(booking);
 
       try {
