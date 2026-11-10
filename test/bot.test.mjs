@@ -213,8 +213,27 @@ t('un CP corto se rechaza',
   const r = await correrHerramienta('horarios_disponibles', { zona: 'C' }, {}, lunes);
   t('devuelve días con sus ventanas', r.dias.length > 0 && r.dias[0].ventanas.length > 0);
   t('ninguno es sábado', r.dias.every((d) => !/sábado/i.test(d.dia)));
-  t('avisa que la ventana suele ser preferencia, no hora exacta',
-    r.nota.includes('preferencia'));
+  // ELEGIR NO ES TRABAJO DEL MODELO. Antes esto devolvía seis días con seis
+  // o siete ventanas —más de cuarenta opciones— y el bot elegía dos al azar:
+  // ofrecía el jueves a las 5 habiendo hueco hoy. Ahora la herramienta dice
+  // cuáles dos ofrecer, como hace el equipo por WhatsApp.
+  t('sugiere exactamente dos opciones', r.sugerencias.length === 2);
+  t('la primera es la más pronta que existe',
+    r.sugerencias[0].fecha === r.dias[0].fecha && r.sugerencias[0].ventana === r.dias[0].ventanas[0]);
+  t('la segunda es de otro día, para quien no puede hoy',
+    r.sugerencias[1].fecha !== r.sugerencias[0].fecha);
+  t('cada una dice si la hora es compromiso o aproximada',
+    r.sugerencias.every((s) => /comprometida|aproximada/.test(s.transporte)));
+  t('y se le dice al bot que ofrezca esas dos, no la lista entera',
+    r.nota.includes('sugerencias') && r.nota.includes('no la lista entera'));
+}
+{
+  // En A, la ventana nocturna es la del equipo propio y se marca distinto.
+  const lunes = new Date(2026, 10, 9, 18, 30, 0);
+  const r = await correrHerramienta('horarios_disponibles', { zona: 'A' }, {}, lunes);
+  const nuestra = r.sugerencias.find((s) => s.ventana === '8pm-10pm');
+  t('la ventana de nuestro equipo se ofrece como compromiso',
+    !nuestra || /comprometida/.test(nuestra.transporte));
 }
 {
   const r = await correrHerramienta('horarios_disponibles', { zona: 'Z' }, {});
@@ -318,6 +337,21 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
   t('ni con "mi casa" por domicilio',
     (await correrHerramienta('agendar_recoleccion', { ...datos, direccion: 'mi casa' },
       { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).falta === 'direccion');
+  // El código postal casi siempre viene en el domicilio. Pedirlo aparte es
+  // una pregunta de más justo cuando el cliente ya dio su dirección completa.
+  {
+    const r1 = reservaFalsa();
+    const r = await correrHerramienta('agendar_recoleccion',
+      { ...datos, cp: null, direccion: 'José Martí 214, Escandón, Miguel Hidalgo, 06700' },
+      { supabase: supabaseFalso(CP), reservar: r1.fn }, lunes);
+    t('el CP se saca del domicilio y no se pregunta aparte', r.agendado === true);
+    t('y llega a la reserva', r1.llamadas[0].cp === '06700');
+  }
+  t('si de plano no viene en ningún lado, ahí sí se pide',
+    (await correrHerramienta('agendar_recoleccion',
+      { ...datos, cp: null, direccion: 'José Martí 214, Escandón, Miguel Hidalgo' },
+      { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).falta === 'cp');
+
   t('ni sin nombre',
     (await correrHerramienta('agendar_recoleccion', { ...datos, nombre: '  ' },
       { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).falta === 'nombre');

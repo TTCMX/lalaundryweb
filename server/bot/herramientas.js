@@ -130,7 +130,10 @@ export const DEFINICIONES = [
           type: ['string', 'null'],
           description: 'Correo donde llega la confirmación. Pídelo, pero si no lo quiere dar manda null y se agenda igual.',
         },
-        cp: { type: 'string', description: 'Código postal, el mismo que verificaste.' },
+        cp: {
+          type: ['string', 'null'],
+          description: 'Código postal. Si ya viene en la dirección no lo pidas aparte: manda null y se saca de ahí.',
+        },
         direccion: {
           type: 'string',
           description: 'Domicilio completo: calle, número, interior si hay, colonia y alcaldía.',
@@ -403,7 +406,31 @@ async function horarios_disponibles({ zona }, _deps, ahora = new Date()) {
   if (!dias.length) {
     return { dias: [], nota: 'No hay horarios que ofrecer para esa zona.' };
   }
+
+  const comoSeLlama = (d, h) => ({
+    fecha: d.isoDate,
+    dia: d.fullLabel,
+    ventana: h.label,
+    transporte: h.propio ? 'nuestro equipo (hora comprometida)' : 'Uber Direct (hora aproximada)',
+  });
+
+  // LAS DOS QUE HAY QUE OFRECER.
+  //
+  // Antes esto devolvía seis días con seis o siete ventanas cada uno —más de
+  // cuarenta opciones— y el modelo elegía dos al azar. Se notaba: ofrecía el
+  // jueves a las 5 cuando había hueco hoy. Elegir no es trabajo del modelo,
+  // es una regla: la más pronta, y una de otro día para quien no puede hoy.
+  // Es como ofrece el equipo por WhatsApp.
+  const todas = dias.flatMap((d) => d.horas.map((h) => comoSeLlama(d, h)));
+  const primera = todas[0];
+  const otroDia = todas.find((v) => v.fecha !== primera.fecha);
+  // Si solo queda un día con huecos, la segunda opción es una ventana más
+  // tarde del mismo día: ofrecer dos cosas sigue siendo mejor que una.
+  const segunda = otroDia || todas.find((v) => v.ventana !== primera.ventana) || null;
+
   return {
+    // Esto es lo que se le dice al cliente. Lo de abajo es el respaldo.
+    sugerencias: [primera, segunda].filter(Boolean),
     dias: dias.map((d) => ({
       fecha: d.isoDate,
       dia: d.fullLabel,
@@ -414,7 +441,7 @@ async function horarios_disponibles({ zona }, _deps, ahora = new Date()) {
         ? d.horas.filter((h) => h.propio).map((h) => h.label)
         : [],
     })),
-    nota: 'Salvo las ventanas comprometidas, la recolección la hace un tercero y el horario es una preferencia, no una hora exacta. Para agendar, pasa la fecha y la ventana TAL CUAL a agendar_recoleccion.',
+    nota: 'Ofrécele las dos de `sugerencias`, no la lista entera: "puede ser X o Y, ¿cuál te queda?". El resto de `dias` es solo por si pide otra cosa. Para agendar, pasa la fecha y la ventana TAL CUAL a agendar_recoleccion.',
   };
 }
 
@@ -453,9 +480,16 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     return { agendado: false, falta: 'direccion', motivo: 'El domicilio está incompleto. Pide calle, número, colonia y alcaldía.' };
   }
 
-  const digitos = String(cp || '').replace(/\D/g, '').slice(0, 5);
+  // El código postal casi siempre viene dentro del domicilio. Pedirlo aparte
+  // es una pregunta de más en el momento en que más caro cuesta: el cliente
+  // ya dio su dirección completa y lo que quiere es que le confirmen.
+  let digitos = String(cp || '').replace(/\D/g, '').slice(0, 5);
+  if (digitos.length < 5) digitos = (dir.match(/\b\d{5}\b/) || [''])[0];
   if (digitos.length < 5) {
-    return { agendado: false, falta: 'cp', motivo: 'Falta el código postal de cinco dígitos.' };
+    return {
+      agendado: false, falta: 'cp',
+      motivo: 'No encuentro el código postal en el domicilio. Pídeselo, son cinco dígitos.',
+    };
   }
 
   const { data: filas, error: errZona } = await supabase
