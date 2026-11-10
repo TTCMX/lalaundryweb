@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import BotonChat from './BotonChat.jsx';
 import styles from './Layout.module.css';
 
 // El seguimiento vive en la app de operaciones, no en este sitio. El enlace
@@ -112,40 +113,6 @@ function Footer() {
         </a>
       </div>
     </footer>
-  );
-}
-
-// El chat se baja solo cuando alguien lo abre: la mayoría de las visitas no
-// lo usan y no tienen por qué pagarlo en la primera carga.
-const Chat = lazy(() => import('./Chat.jsx'));
-
-function BotonChat() {
-  const [abierto, setAbierto] = useState(false);
-
-  if (abierto) {
-    // Sin respaldo visible: el chat tarda un parpadeo en bajar y un recuadro
-    // "Cargando" que aparece y se va llamaría más la atención que el chat.
-    return (
-      <Suspense fallback={null}>
-        <Chat onCerrar={() => setAbierto(false)} />
-      </Suspense>
-    );
-  }
-
-  return (
-    <button
-      onClick={() => setAbierto(true)}
-      aria-label="Abrir chat"
-      style={{
-        position: 'fixed', right: 16, bottom: 16, zIndex: 60,
-        background: '#f37562', color: '#fff', border: 'none',
-        borderRadius: 999, padding: '13px 20px', fontSize: 15, fontWeight: 700,
-        fontFamily: "'Work Sans', Arial, Helvetica, sans-serif",
-        boxShadow: '0 6px 20px rgba(243,117,98,.4)', cursor: 'pointer',
-      }}
-    >
-      ¿Dudas?
-    </button>
   );
 }
 

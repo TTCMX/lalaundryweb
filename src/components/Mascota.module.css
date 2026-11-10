@@ -1,0 +1,79 @@
+/* Burbu, la mascota del chat.
+ *
+ * Las animaciones viven aquí y no en estilos en línea porque @keyframes no
+ * existe en línea. Todas son de transform/opacity: ésas las anima el
+ * compositor y no obligan al navegador a recalcular la página, que en un
+ * elemento fijo encima de todo el sitio sí se nota.
+ */
+
+.mascota {
+  display: block;
+  width: auto;
+  /* El dibujo es de una sola pieza con su sombra; sin esto, al encogerlo el
+     navegador le mete un borde raro en pantallas de alta densidad. */
+  image-rendering: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Respira. Es casi todo el truco: un personaje que no se mueve nunca parece
+   una calcomanía, y uno que se mueve mucho distrae de lo que se está
+   leyendo. */
+.viva {
+  animation: respirar 4.2s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes respirar {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-2px) scale(1.012, 0.988); }
+}
+
+/* Consultando algo: se balancea, como quien revisa el teléfono. */
+.pensando {
+  animation: pensar 1.5s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+@keyframes pensar {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
+}
+
+/* Algo salió bien: un brinco, una sola vez. */
+.listo {
+  animation: brincar 0.8s cubic-bezier(0.3, 1.4, 0.5, 1) 1;
+  transform-origin: 50% 100%;
+}
+
+@keyframes brincar {
+  0% { transform: translateY(0) scale(1, 1); }
+  26% { transform: translateY(-10px) scale(0.95, 1.07); }
+  55% { transform: translateY(0) scale(1.07, 0.93); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+
+/* Saludando: la mano se mueve con todo el cuerpo, que es lo más que se puede
+   hacer con un dibujo de una sola pieza sin que se vea raro. */
+.saluda {
+  animation: saludar 2.6s ease-in-out infinite;
+  transform-origin: 46% 100%;
+}
+
+@keyframes saludar {
+  0%, 62%, 100% { transform: rotate(0deg); }
+  70% { transform: rotate(-5deg); }
+  78% { transform: rotate(4deg); }
+  86% { transform: rotate(-3deg); }
+}
+
+/* Quien pidió menos movimiento no lo pide a medias: se quedan las poses —la
+   mascota sigue cambiando de dibujo— y se va todo lo que se mueve solo. */
+@media (prefers-reduced-motion: reduce) {
+  .viva,
+  .pensando,
+  .listo,
+  .saluda {
+    animation: none;
+  }
+}
