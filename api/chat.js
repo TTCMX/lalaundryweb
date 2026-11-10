@@ -138,6 +138,22 @@ export default async function handler(req, res) {
         .from('chat_conversaciones').select('*').eq('id', conversacionId).maybeSingle();
       conv = data;
     }
+
+    // UNA CONVERSACIÓN CERRADA NO PUEDE DEJAR MUDO AL NAVEGADOR.
+    //
+    // El id vive en localStorage para que recargar no pierda el hilo, y ahí
+    // se queda. Cuando alguien cerraba la conversación desde la bandeja, ese
+    // navegador quedaba mudo PARA SIEMPRE: el cliente escribía, esto
+    // contestaba "cerrada" sin texto, y el widget no mostraba nada —ni
+    // respuesta, ni error, ni explicación—. Una pantalla que se traga lo que
+    // escribes es peor que una que falla.
+    //
+    // Cerrar una conversación significa "ésta terminó", no "esta persona ya
+    // no puede escribirnos". Así que un mensaje nuevo abre una nueva, que es
+    // lo que el cliente espera: él no sabe que existe algo llamado
+    // conversación.
+    if (conv?.estado === 'cerrada') conv = null;
+
     if (!conv) {
       const { data, error } = await supabase
         .from('chat_conversaciones')
@@ -156,14 +172,15 @@ export default async function handler(req, res) {
     await supabase.from('chat_conversaciones')
       .update({ tocado_en: new Date().toISOString() }).eq('id', conv.id);
 
-    // Si ya la tomó una persona, el bot se calla. Contestar encima sería
-    // dos voces hablándole al cliente a la vez.
+    // Si ya la tomó una persona, el bot se calla. Contestar encima sería dos
+    // voces hablándole al cliente a la vez. Pero NO se contesta en blanco: el
+    // mensaje ya quedó guardado y el equipo lo ve, y eso hay que decirlo, o
+    // el cliente cree que no se mandó.
     if (conv.estado === 'humano') {
-      res.status(200).json({ conversacionId: conv.id, estado: 'humano', texto: null });
-      return;
-    }
-    if (conv.estado === 'cerrada') {
-      res.status(200).json({ conversacionId: conv.id, estado: 'cerrada', texto: null });
+      res.status(200).json({
+        conversacionId: conv.id, estado: 'humano', texto: null,
+        aviso: 'Tu mensaje ya le llegó al equipo. Te contestan por aquí mismo.',
+      });
       return;
     }
 

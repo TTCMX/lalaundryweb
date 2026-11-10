@@ -111,7 +111,18 @@ export default function Chat({ onCerrar }) {
       // Si en este turno se agendó, Burbu lo festeja. Dura hasta el siguiente
       // mensaje: es una reacción, no un estado permanente.
       if (d.reserva) setAgendado(true);
-      if (d.texto) setMensajes((m) => [...m, { rol: 'bot', texto: d.texto }]);
+
+      if (d.texto) {
+        setMensajes((m) => [...m, { rol: 'bot', texto: d.texto }]);
+      } else if (d.aviso) {
+        setError(d.aviso);
+      } else {
+        // NUNCA EN SILENCIO. Si la respuesta vino sin texto y sin aviso, algo
+        // cambió del lado del servidor que este widget no conoce. Quedarse
+        // callado es lo peor que puede hacer: el cliente ve su mensaje ahí
+        // colgado y no sabe si se mandó, si falló o si lo están leyendo.
+        setError('Tu mensaje quedó guardado, pero no pude contestarte. Alguien del equipo lo va a ver.');
+      }
     } catch {
       setError('No pude mandar tu mensaje. Intenta otra vez.');
     } finally {
@@ -130,7 +141,8 @@ export default function Chat({ onCerrar }) {
 
   const leyenda = estado === 'humano' ? 'Te contesta una persona del equipo'
     : enviando ? 'Consultando…'
-      : 'Contesta al momento';
+      : estado === 'cerrada' ? 'Esta conversación se cerró'
+        : 'Contesta al momento';
 
   // Los atajos solo al principio: después estorban más de lo que ayudan.
   const verAtajos = mensajes.length <= 1 && !enviando && estado === 'bot';
