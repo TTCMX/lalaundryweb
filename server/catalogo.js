@@ -34,7 +34,7 @@ export const CATALOGO = [
   // Lavandería
   { nombre: 'Ropa y ropa de cama', categoria: 'Lavandería', precio: 40, unidad: 'kg',
     detalle: 'Por kg', sinonimos: ['ropa', 'granel', 'kilo', 'kilos', 'lavanderia', 'sabanas', 'cama'] },
-  { nombre: 'Edredón', categoria: 'Lavandería', precio: 160, unidad: 'pieza',
+  { nombre: 'Edredón', categoria: 'Lavandería', precio: 180, unidad: 'pieza',
     detalle: 'Matrimonial +$10, Queen +$20, King +$30, Pluma +$55',
     sinonimos: ['edredon', 'colcha', 'cobija', 'cobertor'] },
   { nombre: 'Tenis', categoria: 'Lavandería', precio: 150, unidad: 'par', escalonado: true,
@@ -47,7 +47,7 @@ export const CATALOGO = [
     detalle: 'Queen y King +$30', sinonimos: ['almohadas', 'cojin'] },
   { nombre: 'Mochila', categoria: 'Lavandería', precio: 140, unidad: 'pieza',
     detalle: 'Maleta o grande +$30, cuero +$40', sinonimos: ['mochilas', 'maleta', 'backpack'] },
-  { nombre: 'Cubrecolchón', categoria: 'Lavandería', precio: 300, unidad: 'pieza',
+  { nombre: 'Cubrecolchón', categoria: 'Lavandería', precio: 350, unidad: 'pieza',
     detalle: 'Matrimonial +$30, Queen +$70, King +$100',
     sinonimos: ['cubrecolchon', 'protector de colchon'] },
   { nombre: 'Sneakers — lavado en seco', categoria: 'Lavandería', precio: 250, unidad: 'par',
