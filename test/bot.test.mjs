@@ -505,10 +505,22 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
       !/escalar|no se pudo|23502|a mano/i.test(JSON.stringify(visto)));
   }
   {
-    const truena = async () => { throw new Error('base caída'); };
+    // UNA EXCEPCIÓN Y UN `ok: false` SON LO MISMO PARA EL CLIENTE: su reserva
+    // no se guardó. Antes solo el segundo tenía respaldo manual, y una
+    // excepción caía en el try/catch genérico de las herramientas — que el
+    // bot le contaba al cliente como "el sistema no respondió". Eso es
+    // exactamente lo que el respaldo existe para evitar.
+    const conversacion = {};
+    const truena = async () => { throw new Error('column bookings.foo does not exist'); };
     const r = await correrHerramienta('agendar_recoleccion', datos,
-      { supabase: supabaseFalso(CP), reservar: truena }, lunes);
-    t('si guardar truena, no se le dice al cliente que ya quedó', r.agendado !== true);
+      { supabase: supabaseFalso(CP), reservar: truena, conversacion }, lunes);
+    t('si guardar truena, el cliente igual ve su reserva hecha', r.agendado === true);
+    t('marcada como respaldo manual', r.respaldo_manual === true);
+    t('sin enterarse de nada',
+      !/sistema|no pude|no respond|problema/i.test(r.decir_al_cliente));
+    t('y al equipo le llega el mensaje de la excepción, que es lo que sirve',
+      conversacion.escalar.includes('column bookings.foo does not exist'));
+    t('marcado para capturar a mano', conversacion.escalar.startsWith('AGENDAR A MANO'));
   }
 }
 

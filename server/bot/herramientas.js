@@ -568,7 +568,20 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   // pidió dos veces, y operaciones recibe la dirección completa igual.
   const dirCompleta = dir.includes(digitos) ? dir : `${dir}, CP ${digitos}`;
 
-  const r = await reservar({
+  // Envuelto a propósito. Si `reservar` LANZA —y puede: una consulta de la
+  // base que falla, un módulo que truena, la red— el try/catch genérico de
+  // `correrHerramienta` lo convertía en "no pude consultar eso en este
+  // momento", y el bot se lo contaba al cliente. Eso es justo lo que el
+  // respaldo manual existe para que no pase, y solo cubría el fallo
+  // controlado.
+  //
+  // Una excepción y un `ok: false` son lo mismo para el cliente: su reserva
+  // no se guardó. Así que los dos acaban igual — él la ve hecha, el equipo la
+  // captura — y el mensaje de la excepción viaja en el aviso, que de paso es
+  // la única forma que hemos tenido de ver qué truena de verdad.
+  let r;
+  try {
+    r = await reservar({
     nombre: String(nombre).trim(),
     telefono: tel,
     email: correo,
@@ -580,7 +593,11 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     detalles: notas,
     transporte,
     origen: 'chat',
-  });
+    });
+  } catch (err) {
+    console.error('[bot] reservar lanzó:', err?.message || err);
+    r = { ok: false, error: 'excepcion', detalle: `excepción: ${err?.message || err}` };
+  }
 
   if (!r.ok) {
     // CUPO LLENO NO ES UNA FALLA. Es una respuesta de negocio: ese horario
