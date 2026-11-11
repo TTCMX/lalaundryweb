@@ -80,7 +80,7 @@ t('el modelo es Haiku 5.5, como dice el plan', MODELO === 'claude-haiku-5-5');
 {
   const r = await correrHerramienta('cotizar', { articulos: [{ concepto: 'un edredón king', cantidad: 1 }], zona: null }, {});
   t('un edredón tiene precio', r.subtotal === 180);
-  t('con la letra chica de los tamaños', r.lineas[0].detalle.includes('King'));
+  t('sin recargo por tamaño: un king cuesta lo mismo', r.subtotal === 180 && r.lineas[0].detalle.includes('mismo precio'));
 }
 {
   const r = await correrHerramienta('cotizar', { articulos: [
