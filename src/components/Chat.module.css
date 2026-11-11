@@ -9,8 +9,8 @@
   right: 16px;
   bottom: 16px;
   z-index: 60;
-  width: min(380px, calc(100vw - 32px));
-  height: min(580px, calc(100dvh - 32px));
+  width: min(440px, calc(100vw - 32px));
+  height: min(680px, calc(100dvh - 32px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -28,7 +28,7 @@
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-/* En el teléfono ocupa la pantalla: una ventanita flotante de 380px en un
+/* En el teléfono ocupa la pantalla: una ventanita flotante de 440px en un
    celular deja el teclado encima del campo de texto. */
 @media (max-width: 480px) {
   .panel {
