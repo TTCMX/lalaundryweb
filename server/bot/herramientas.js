@@ -583,8 +583,16 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   });
 
   if (!r.ok) {
+    // CUPO LLENO NO ES UNA FALLA. Es una respuesta de negocio: ese horario
+    // ya se apartó completo y hay que ofrecer otro. Decía "no se pudo
+    // guardar", que suena a que algo se rompió — y se leyó así durante dos
+    // días, mientras el guardado funcionaba perfecto.
     if (r.error === 'slot-full') {
-      return { agendado: false, motivo: `${r.mensaje} Ofrécele otra ventana de horarios_disponibles.` };
+      return {
+        agendado: false,
+        cupo_lleno: true,
+        motivo: `Esa ventana ya se llenó, no es un error. Díselo así —"ese horario ya se apartó completo"— y ofrécele otras dos de horarios_disponibles.`,
+      };
     }
     // RESPALDO MANUAL.
     //

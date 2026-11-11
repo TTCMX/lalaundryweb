@@ -447,7 +447,16 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
     const r = await correrHerramienta('agendar_recoleccion', datos,
       { supabase: supabaseFalso(CP), reservar: lleno }, lunes);
     t('un horario lleno no agenda', r.agendado === false);
-    t('y se ofrece otro', r.motivo.includes('otra ventana'));
+    // CUPO LLENO NO ES UNA FALLA, y el bot no lo puede contar como tal: se
+    // leyó como "el sistema no guarda" durante dos días mientras el guardado
+    // funcionaba y lo que pasaba era que las pruebas habían llenado la
+    // ventana.
+    t('se marca como cupo, no como error', r.cupo_lleno === true);
+    t('y se le dice al bot que lo cuente como lo que es',
+      r.motivo.includes('ya se llenó'));
+    t('sin hacerlo pasar por una falla del sistema',
+      !r.motivo.includes('no se pudo guardar'));
+    t('ofreciendo otras', /otras dos|otra ventana/i.test(r.motivo));
   }
   {
     // El motivo REAL tiene que llegarle al equipo. Antes, un error de la base
