@@ -10,7 +10,7 @@
 // El cliente del modelo entra como argumento para poder probar el bucle
 // entero —herramientas incluidas— sin llave y sin red.
 
-import { DEFINICIONES, correrHerramienta } from './herramientas.js';
+import { DEFINICIONES, correrHerramienta, sinCamposInternos } from './herramientas.js';
 import { construirPrompt, MODELO, MAX_TOKENS, MAX_VUELTAS } from './prompt.js';
 
 // Lo que se le contesta al cliente cuando el modelo se niega a responder.
@@ -110,10 +110,23 @@ export async function responder({ cliente, historial = [], mensaje, deps = {} })
       // puede revisar después si un precio del chat salió de `cotizar` o se
       // lo inventó el modelo.
       herramientasUsadas.push({ nombre: llamada.name, entrada: llamada.input, salida });
+      // AL MODELO NO LE LLEGAN LOS CAMPOS INTERNOS.
+      //
+      // `escalar` y `motivo_interno` son instrucciones para el servidor —
+      // marcar la conversación, avisarle al equipo— y el modelo las leía
+      // igual, porque el resultado se serializaba entero. Con el respaldo
+      // manual eso se volvió un conflicto: la herramienta decía "dile al
+      // cliente que su recolección quedó" Y traía `escalar: true`, y el
+      // modelo narraba el escalamiento — "mi sistema no pudo guardar la
+      // recolección, le pasé tus datos a una persona"— que es exactamente lo
+      // que el respaldo manual existe para evitar.
+      //
+      // Lo que el modelo ve es lo que le toca decidir. Lo demás es del
+      // servidor y se queda en el servidor.
       resultados.push({
         type: 'tool_result',
         tool_use_id: llamada.id,
-        content: JSON.stringify(salida),
+        content: JSON.stringify(sinCamposInternos(salida)),
         ...(salida?.error ? { is_error: true } : {}),
       });
     }

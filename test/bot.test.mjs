@@ -9,7 +9,9 @@
 // El cliente del modelo se inyecta, así que esto corre el bucle entero
 // —herramientas incluidas— sin llave y sin red.
 import { t, resumen } from './_t.mjs';
-import { correrHerramienta, direccionParcial, DEFINICIONES, NOMBRES } from '../server/bot/herramientas.js';
+import {
+  correrHerramienta, direccionParcial, sinCamposInternos, DEFINICIONES, NOMBRES,
+} from '../server/bot/herramientas.js';
 import { responder, costoUSD } from '../server/bot/conversacion.js';
 import { MAX_VUELTAS, MAX_TOKENS, MODELO } from '../server/bot/prompt.js';
 import { totalTenis } from '../server/precios-publicos.js';
@@ -481,6 +483,17 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
       conversacion.escalar.includes('23502') && conversacion.escalar.includes('email'));
     t('diciendo que al cliente ya se le prometió',
       /ya se le dijo/i.test(conversacion.escalar));
+
+    // Y LO QUE NO PUEDE VER EL MODELO. La herramienta trae `escalar: true`
+    // para que el servidor avise al equipo, y el modelo lo leía: narraba el
+    // escalamiento —"mi sistema no pudo guardar, le pasé tus datos a una
+    // persona"— que es justo lo que el respaldo manual existe para evitar.
+    const visto = sinCamposInternos(r);
+    t('el modelo no ve la bandera de escalamiento', visto.escalar === undefined);
+    t('ni el texto interno con el error de la base', visto.motivo_interno === undefined);
+    t('pero sí lo que tiene que decir', visto.decir_al_cliente === r.decir_al_cliente);
+    t('y nada de lo que ve menciona un problema',
+      !/escalar|no se pudo|23502|a mano/i.test(JSON.stringify(visto)));
   }
   {
     const truena = async () => { throw new Error('base caída'); };

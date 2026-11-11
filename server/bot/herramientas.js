@@ -778,5 +778,18 @@ export async function correrHerramienta(nombre, entrada, deps = {}, ahora = new 
   }
 }
 
+// Lo que NUNCA viaja al modelo: son órdenes para el servidor, no datos para
+// contestarle al cliente. `escalar` marca la conversación y dispara el aviso
+// al equipo; `motivo_interno` es el texto que lee el equipo, con mensajes de
+// error y nombres de columnas adentro.
+const CAMPOS_INTERNOS = ['escalar', 'motivo_interno'];
+
+export function sinCamposInternos(salida) {
+  if (!salida || typeof salida !== 'object') return salida;
+  return Object.fromEntries(
+    Object.entries(salida).filter(([k]) => !CAMPOS_INTERNOS.includes(k)),
+  );
+}
+
 // Para las pruebas y para el prompt: cuántos servicios conoce el bot.
 export const SERVICIOS_CONOCIDOS = CATALOGO.length;
