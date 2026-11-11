@@ -44,7 +44,7 @@ export const CATALOGO = [
   { nombre: 'Gorras', categoria: 'Lavandería', precio: 80, unidad: 'pieza',
     detalle: 'Gamuza y ante +$20', sinonimos: ['gorra', 'cachucha'] },
   { nombre: 'Almohada', categoria: 'Lavandería', precio: 170, unidad: 'pieza',
-    detalle: 'Queen y King +$30', sinonimos: ['almohadas', 'cojin'] },
+    detalle: 'Cualquier tamaño, mismo precio', sinonimos: ['almohadas', 'cojin'] },
   { nombre: 'Mochila', categoria: 'Lavandería', precio: 140, unidad: 'pieza',
     detalle: 'Maleta o grande +$30, cuero +$40', sinonimos: ['mochilas', 'maleta', 'backpack'] },
   { nombre: 'Cubrecolchón', categoria: 'Lavandería', precio: 350, unidad: 'pieza',
