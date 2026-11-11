@@ -221,7 +221,13 @@ export async function avisarFalloDeCorreo(booking, resultado) {
   }, 'fallo de correo');
 }
 
-export function formatOwnerNotificationHtml(booking) {
+// `transporte` viene como argumento. Esta función lo usaba sin tenerlo, y
+// como corre en CADA reserva cuando hay llave de Resend —o sea en
+// producción, y nunca en las pruebas, que no tienen llave—, todas las
+// reservas tronaban aquí con ReferenceError después de insertarse: fila
+// guardada, correo al cliente enviado, aviso a operaciones NUNCA enviado, y
+// el cliente oyendo "el sistema no respondió". Días de eso.
+export function formatOwnerNotificationHtml(booking, transporte) {
   return renderEmailShell({
     eyebrow: booking.es_recurrente ? 'Cliente recurrente' : 'Nueva recolección',
     heading: 'Nueva recolección agendada',
@@ -331,6 +337,7 @@ export async function avisarChatEsperando({ conversacionId, motivo, ultimoMensaj
 }
 
 export async function sendOwnerBookingNotification(booking, { transporte } = {}) {
+  // (ver formatOwnerNotificationHtml: el transporte tiene que llegarle)
   const ownerEmails = (process.env.OWNER_NOTIFICATION_EMAIL || '')
     .split(',')
     .map((e) => e.trim())
@@ -346,7 +353,7 @@ export async function sendOwnerBookingNotification(booking, { transporte } = {})
     from,
     to: ownerEmails,
     subject: `Nueva recolección: ${booking.direccion}`,
-    html: formatOwnerNotificationHtml(booking),
+    html: formatOwnerNotificationHtml(booking, transporte),
   }, 'owner notification');
 }
 

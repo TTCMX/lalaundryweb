@@ -21,7 +21,16 @@ export async function countBookingsInSlot(diaLabel, horaLabel, excludeBookingId)
   if (excludeBookingId) query = query.neq('id', excludeBookingId);
 
   const { count, error } = await query;
-  if (error) throw error;
+  // NO SE LANZA. Era el único `throw` que quedaba en todo el camino de una
+  // reserva, y subía hasta el try/catch genérico de las herramientas del bot
+  // como "no pude consultar eso en este momento" — sin el mensaje de la base.
+  // Un conteo que falla no es motivo para rechazar una reserva: se anota
+  // fuerte y se deja pasar. Peor es bloquear a todos los clientes porque una
+  // consulta de apoyo tuvo un mal momento.
+  if (error) {
+    console.error('[capacity] no se pudo contar el cupo (se deja pasar):', error.code || '', error.message);
+    return 0;
+  }
   return count || 0;
 }
 

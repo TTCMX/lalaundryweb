@@ -183,4 +183,42 @@ t('sin resultado tampoco truena', esFalla(null) === false && esFalla(undefined) 
   } finally { globalThis.fetch = realFetch; }
 }
 
+
+// ── Los armadores de HTML corren con y sin transporte ─────────────────────
+//
+// EL BUG QUE COSTÓ LA SEMANA. formatOwnerNotificationHtml usaba `transporte`
+// sin recibirlo. Corre en CADA reserva cuando hay llave de Resend —o sea en
+// producción— y nunca en estas pruebas, porque sin llave el envío se corta
+// antes de armar el HTML. Resultado: toda reserva se insertaba, le llegaba
+// su correo al cliente, y después tronaba con ReferenceError antes de avisar
+// a operaciones. El bot decía "el sistema no respondió" con la fila ya
+// guardada. Los armadores se prueban DIRECTO, sin depender de la llave.
+{
+  const { formatOwnerNotificationHtml, formatBookingHtml } = await import('../server/email.js');
+  const sinCorreo = { ...RESERVA, email: null };
+  let html = null;
+  let error = null;
+  try { html = formatOwnerNotificationHtml(sinCorreo); } catch (e) { error = e; }
+  t('el aviso al dueño se arma sin pasar transporte', error === null && typeof html === 'string');
+  t('y trae la fila de pago', html.includes('Pago'));
+  t('con transporte propio dice efectivo en la entrega',
+    formatOwnerNotificationHtml(RESERVA, 'propio').includes('efectivo'));
+  t('con Uber Direct no', !formatOwnerNotificationHtml(RESERVA, 'uber_direct').includes('efectivo'));
+  t('la confirmación al cliente también se arma sin transporte',
+    typeof formatBookingHtml(sinCorreo) === 'string');
+}
+{
+  // Y el envío completo al dueño, con llave puesta: tiene que resolver, no
+  // lanzar. El envío en sí falla por red y se atrapa; lo que se prueba es que
+  // nada truene antes de llegar ahí.
+  process.env.RESEND_API_KEY = 're_llave_de_prueba';
+  process.env.OWNER_NOTIFICATION_EMAIL = 'dueno@ejemplo.com';
+  const { sendOwnerBookingNotification } = await import('../server/email.js');
+  let lanzo = false;
+  try { await sendOwnerBookingNotification({ ...RESERVA, email: null }, { transporte: 'uber_direct' }); } catch { lanzo = true; }
+  t('sendOwnerBookingNotification no lanza con una reserva sin correo', lanzo === false);
+  try { await sendOwnerBookingNotification(RESERVA); } catch { lanzo = true; }
+  t('ni cuando no se le pasa transporte', lanzo === false);
+}
+
 resumen('envío de correo');

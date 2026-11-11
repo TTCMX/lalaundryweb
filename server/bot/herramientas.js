@@ -200,7 +200,7 @@ export const NOMBRES = DEFINICIONES.map((d) => d.name);
 // Cada una recibe `deps` (supabase y el estado de la conversación) para poder
 // probarlas sin base de datos ni red.
 
-async function verificar_cobertura({ cp }, { supabase }) {
+async function verificar_cobertura({ cp }, { supabase, conversacion }) {
   const digitos = String(cp || '').replace(/\D/g, '').slice(0, 5);
   if (digitos.length < 5) {
     return { cubierto: false, motivo: 'El código postal debe tener cinco dígitos.' };
@@ -216,6 +216,11 @@ async function verificar_cobertura({ cp }, { supabase }) {
   if (!fila) {
     return { cubierto: false, cp: digitos, motivo: 'Todavía no llegamos a ese código postal.' };
   }
+
+  // El CP verificado se recuerda en la conversación. Si después el modelo
+  // llama a agendar sin pasarlo —pasa— se usa éste en vez de volver a
+  // pedírselo al cliente, que ya lo dio.
+  if (conversacion) conversacion.cpVerificado = digitos;
 
   const t = transporteDeZona(fila.zona);
   const comun = {
@@ -495,6 +500,10 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   // ya dio su dirección completa y lo que quiere es que le confirmen.
   let digitos = String(cp || '').replace(/\D/g, '').slice(0, 5);
   if (digitos.length < 5) digitos = (dir.match(/\b\d{5}\b/) || [''])[0];
+  // Y si no vino ni en el argumento ni en el domicilio, el que ya se verificó
+  // en esta misma conversación. Pedirlo otra vez es la pregunta repetida que
+  // más molesta: el cliente lo dio hace tres mensajes.
+  if (digitos.length < 5 && conversacion?.cpVerificado) digitos = conversacion.cpVerificado;
   if (digitos.length < 5) {
     return {
       agendado: false, falta: 'cp',
