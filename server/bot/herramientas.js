@@ -136,7 +136,7 @@ export const DEFINICIONES = [
         },
         direccion: {
           type: 'string',
-          description: 'Domicilio completo: calle, número, interior si hay, colonia y alcaldía.',
+          description: 'Calle y número. Con eso basta: no pidas colonia, alcaldía ni interior.',
         },
         fecha: { type: 'string', description: 'La fecha en formato YYYY-MM-DD, tal cual la devolvió horarios_disponibles.' },
         ventana: { type: 'string', description: 'La ventana tal cual, por ejemplo "10am-12pm".' },
@@ -473,11 +473,21 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
   if (!String(nombre || '').trim()) {
     return { agendado: false, falta: 'nombre', motivo: 'Falta el nombre de quien recibe.' };
   }
-  // Un domicilio de dos palabras no sirve para recoger. No es una validación
-  // estricta —no se puede— pero sí ataja el caso de "mi casa".
+  // CALLE Y NÚMERO BASTAN. Pedir calle, número, interior, colonia y alcaldía
+  // es una lista que cansa, y cada pregunta de más es una reserva menos. Con
+  // el código postal —que ya se pidió para ver la cobertura— y la calle con
+  // su número, el repartidor llega.
+  //
+  // Lo único que se ataja aquí es "mi casa": algo que tenga letras y un
+  // número. No es una validación estricta, no se puede serlo con direcciones
+  // de verdad, y de todas formas quien recoge puede llamar.
   const dir = String(direccion || '').trim();
-  if (dir.length < 12) {
-    return { agendado: false, falta: 'direccion', motivo: 'El domicilio está incompleto. Pide calle, número, colonia y alcaldía.' };
+  const pareceDomicilio = /\d/.test(dir) && (dir.match(/[a-záéíóúñ]/gi) || []).length >= 4;
+  if (!pareceDomicilio) {
+    return {
+      agendado: false, falta: 'direccion',
+      motivo: 'Falta el domicilio. Con la calle y el número basta.',
+    };
   }
 
   // El código postal casi siempre viene dentro del domicilio. Pedirlo aparte
@@ -554,11 +564,15 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     String(detalles ?? '').trim() || null,
   ].filter(Boolean).join(' ') || null;
 
+  // El código postal se pega al domicilio si no venía: al cliente no se le
+  // pidió dos veces, y operaciones recibe la dirección completa igual.
+  const dirCompleta = dir.includes(digitos) ? dir : `${dir}, CP ${digitos}`;
+
   const r = await reservar({
     nombre: String(nombre).trim(),
     telefono: tel,
     email: correo,
-    direccion: dir,
+    direccion: dirCompleta,
     cp: digitos,
     diaLabel: dia.fullLabel,
     horaLabel: ventana,

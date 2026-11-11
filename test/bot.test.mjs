@@ -370,9 +370,33 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
   t('un correo mal escrito sí se rechaza',
     (await correrHerramienta('agendar_recoleccion', { ...datos, email: 'kath@@ejemplo' },
       { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).falta === 'email');
-  t('ni con "mi casa" por domicilio',
+  // CALLE Y NÚMERO BASTAN. Pedir calle, número, interior, colonia y alcaldía
+  // es una lista que cansa, y cada pregunta de más es una reserva menos: con
+  // el código postal que ya se pidió para la cobertura, el repartidor llega.
+  {
+    const r1 = reservaFalsa();
+    const r = await correrHerramienta('agendar_recoleccion',
+      { ...datos, direccion: 'Coyoacán 789' },
+      { supabase: supabaseFalso(CP), reservar: r1.fn }, lunes);
+    t('con calle y número se agenda', r.agendado === true);
+    t('y el CP se pega solo, sin volver a preguntarlo',
+      r1.llamadas[0].direccion === 'Coyoacán 789, CP 06700');
+  }
+  {
+    // Si el domicilio ya trae el CP, no se repite.
+    const r1 = reservaFalsa();
+    await correrHerramienta('agendar_recoleccion',
+      { ...datos, direccion: 'Coyoacán 789, 06700' },
+      { supabase: supabaseFalso(CP), reservar: r1.fn }, lunes);
+    t('y no se pega dos veces', (r1.llamadas[0].direccion.match(/06700/g) || []).length === 1);
+  }
+  t('"mi casa" sigue sin servir para recoger',
     (await correrHerramienta('agendar_recoleccion', { ...datos, direccion: 'mi casa' },
       { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).falta === 'direccion');
+  t('y lo que se le pide es lo mínimo, no la lista entera',
+    /calle y el n/i.test((await correrHerramienta('agendar_recoleccion',
+      { ...datos, direccion: 'mi casa' },
+      { supabase: supabaseFalso(CP), reservar: reservaFalsa().fn }, lunes)).motivo));
   // El código postal casi siempre viene en el domicilio. Pedirlo aparte es
   // una pregunta de más justo cuando el cliente ya dio su dirección completa.
   {
