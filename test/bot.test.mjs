@@ -424,6 +424,24 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
     t('y se ofrece otro', r.motivo.includes('otra ventana'));
   }
   {
+    // El motivo REAL tiene que llegarle al equipo. Antes, un error de la base
+    // se lanzaba, lo atrapaba el try/catch genérico de las herramientas, y lo
+    // único que quedaba era "no pude consultar eso en este momento" — que no
+    // dice nada y deja al cliente sin reserva. Pasó de verdad: la columna
+    // `email` no aceptaba nulos y el bot ya podía agendar sin correo.
+    const conversacion = {};
+    const falla = async () => ({
+      ok: false, error: 'no-se-pudo-guardar',
+      detalle: '23502 null value in column "email" violates not-null constraint',
+    });
+    const r = await correrHerramienta('agendar_recoleccion', datos,
+      { supabase: supabaseFalso(CP), reservar: falla, conversacion }, lunes);
+    t('un error de la base no se da por agendado', r.agendado === false);
+    t('al cliente se le dice algo que entienda', !/null value|column|23502/i.test(r.motivo));
+    t('pero al equipo le llega el motivo de verdad',
+      conversacion.escalar.includes('23502') && conversacion.escalar.includes('email'));
+  }
+  {
     const truena = async () => { throw new Error('base caída'); };
     const r = await correrHerramienta('agendar_recoleccion', datos,
       { supabase: supabaseFalso(CP), reservar: truena }, lunes);

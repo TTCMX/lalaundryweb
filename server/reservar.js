@@ -23,6 +23,27 @@ import { notifyOpsApp } from './opsApp.js';
 import { normalizePhone } from './phone.js';
 import { correoValido, limpiarCorreo } from './correo.js';
 
+// Un error de la base NO se lanza: se devuelve con su mensaje.
+//
+// Antes esto hacía `throw error`, y arriba lo atrapaba el try/catch genérico
+// de las herramientas del bot, que contesta "no pude consultar eso en este
+// momento". O sea que el motivo real —una columna que no acepta nulos, un
+// permiso, un tipo— se perdía, y lo único que quedaba era un mensaje que no
+// dice nada y un cliente sin su reserva.
+//
+// El mensaje de Postgres va a los logs completo y vuelve en `detalle` para
+// que quien llame lo pueda registrar. Al cliente nunca se le enseña: no le
+// sirve y puede traer nombres de columnas.
+function falloDeBase(queHacia, error) {
+  console.error(`[reservar] no se pudo ${queHacia}:`, error.code || '', error.message, error.details || '');
+  return {
+    ok: false,
+    error: 'no-se-pudo-guardar',
+    http: 500,
+    detalle: `${error.code ? `${error.code} ` : ''}${error.message}`,
+  };
+}
+
 export async function crearReserva(datos = {}) {
   const {
     bookingId, nombre, direccion, cp, telefono, email,
@@ -130,7 +151,7 @@ export async function crearReserva(datos = {}) {
       .eq('pago_status', 'incompleto')
       .select()
       .maybeSingle();
-    if (error) throw error;
+    if (error) return falloDeBase('actualizar el lead', error);
     booking = data;
 
     if (!booking) {
@@ -150,7 +171,7 @@ export async function crearReserva(datos = {}) {
   } else {
     const { data, error } = await supabase
       .from('bookings').insert(bookingData).select().single();
-    if (error) throw error;
+    if (error) return falloDeBase('guardar la reserva', error);
     booking = data;
   }
 

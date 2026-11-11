@@ -572,7 +572,15 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     if (r.error === 'slot-full') {
       return { agendado: false, motivo: `${r.mensaje} Ofrécele otra ventana de horarios_disponibles.` };
     }
-    return { agendado: false, motivo: 'No se pudo guardar la reserva. Escala a una persona.', escalar: true };
+    // El motivo técnico va al equipo, no al cliente: a él no le sirve y
+    // puede traer nombres de columnas. Sin esto, el equipo recibe "falló" y
+    // no tiene por dónde empezar.
+    return {
+      agendado: false,
+      motivo: 'No se pudo guardar la reserva. Escala a una persona.',
+      motivo_interno: `No se pudo guardar la reserva del chat: ${r.detalle || 'sin detalle'}`,
+      escalar: true,
+    };
   }
 
   // Que la conversación quede marcada con la reserva y con quién es: así la
@@ -711,7 +719,8 @@ export async function correrHerramienta(nombre, entrada, deps = {}, ahora = new 
     // Una herramienta puede pedir el relevo sin que el modelo lo decida: el
     // caso claro es una zona que no se agenda sola.
     if (salida?.escalar && deps.conversacion && !deps.conversacion.escalar) {
-      deps.conversacion.escalar = salida.motivo || 'La herramienta pidió pasar a una persona';
+      deps.conversacion.escalar =
+        salida.motivo_interno || salida.motivo || 'La herramienta pidió pasar a una persona';
     }
     return salida;
   } catch (err) {
