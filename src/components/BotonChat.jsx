@@ -57,7 +57,7 @@ export default function BotonChat() {
         <span className={styles.globo}>¿Te ayudo a cotizar o a agendar?</span>
       )}
       <span className={styles.disco}>
-        <Mascota estado="saluda" size={64} className={styles.asomada} decorativa />
+        <Mascota estado="saluda" size={80} className={styles.asomada} decorativa />
       </span>
     </button>
   );

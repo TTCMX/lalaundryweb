@@ -56,8 +56,8 @@
    barra parecería un icono; asomada, parece un personaje. */
 .retrato {
   flex: 0 0 auto;
-  width: 48px;
-  margin: -14px 0 -8px;
+  width: 64px;
+  margin: -16px 0 -10px;
 }
 
 .titulo {
@@ -152,14 +152,14 @@
 /* La mascota chiquita junto al primer mensaje de cada tanda. En todos sería
    una columna de lavadoras repetidas; en ninguno se pierde quién habla. */
 .avatar {
-  flex: 0 0 26px;
-  width: 26px;
+  flex: 0 0 32px;
+  width: 32px;
   align-self: flex-end;
   margin-bottom: -2px;
 }
 
 .avatarHueco {
-  flex: 0 0 26px;
+  flex: 0 0 32px;
 }
 
 .burbuja {
@@ -377,8 +377,8 @@
    pierde contra cualquier sección clara. */
 .disco {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 84px;
+  height: 84px;
   border-radius: 999px;
   background: var(--color-bg);
   border: 2px solid var(--color-white);

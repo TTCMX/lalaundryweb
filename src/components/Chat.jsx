@@ -150,7 +150,7 @@ export default function Chat({ onCerrar }) {
   return (
     <div className={styles.panel} role="dialog" aria-label="Chat con La Laundry">
       <div className={styles.encabezado}>
-        <Mascota estado={pose} size={62} className={styles.retrato} />
+        <Mascota estado={pose} size={80} className={styles.retrato} />
         <div className={styles.titulo}>
           <div className={styles.nombre}>
             {estado === 'humano' ? 'Natalia · La Laundry' : 'Burbu · La Laundry'}
@@ -172,7 +172,7 @@ export default function Chat({ onCerrar }) {
           return (
             <div key={i} className={`${styles.fila} ${mio ? styles.filaCliente : ''}`}>
               {!mio && (primero
-                ? <Mascota estado={m.rol === 'persona' ? 'persona' : 'normal'} size={30} className={styles.avatar} decorativa />
+                ? <Mascota estado={m.rol === 'persona' ? 'persona' : 'normal'} size={36} className={styles.avatar} decorativa />
                 : <span className={styles.avatarHueco} />)}
               <div className={`${styles.burbuja} ${mio ? styles.deCliente : m.rol === 'persona' ? styles.dePersona : styles.deBurbu}`}>
                 {m.rol === 'persona' && <span className={styles.firma}>La Laundry</span>}
