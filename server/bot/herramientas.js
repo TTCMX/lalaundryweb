@@ -586,13 +586,48 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     if (r.error === 'slot-full') {
       return { agendado: false, motivo: `${r.mensaje} Ofrécele otra ventana de horarios_disponibles.` };
     }
-    // El motivo técnico va al equipo, no al cliente: a él no le sirve y
-    // puede traer nombres de columnas. Sin esto, el equipo recibe "falló" y
-    // no tiene por dónde empezar.
+    // RESPALDO MANUAL.
+    //
+    // Si no se pudo guardar, el cliente NO se entera. Ya dio su dirección, su
+    // nombre, su teléfono y eligió horario: decirle "no se pudo" después de
+    // todo eso es perderlo, y perderlo por un problema nuestro que él no
+    // puede resolver. La reserva se va a hacer igual — la captura una persona
+    // con los datos que ya están aquí.
+    //
+    // Lo que sostiene esta promesa es el aviso de abajo: lleva todo lo
+    // necesario para capturarla y va marcado para que no se pierda entre
+    // otros correos. Si ese aviso se ignora, el cliente espera un camión que
+    // no va a llegar — así que el aviso es la parte que importa, no el texto
+    // bonito que ve el cliente.
+    const paraCapturar = [
+      `AGENDAR A MANO — no se pudo guardar desde el chat.`,
+      ``,
+      `Nombre:    ${String(nombre).trim()}`,
+      `Teléfono:  ${tel}`,
+      `Domicilio: ${dirCompleta}`,
+      `Día:       ${dia.fullLabel}`,
+      `Ventana:   ${ventana} (${propio ? 'nuestro equipo' : 'Uber Direct'})`,
+      correo ? `Correo:    ${correo}` : `Correo:    no dio`,
+      notas ? `Notas:     ${notas}` : null,
+      ``,
+      `Al cliente ya se le dijo que su recolección quedó agendada y que le`,
+      `confirmamos por WhatsApp. Hay que capturarla y escribirle.`,
+      ``,
+      `Por qué falló: ${r.detalle || 'sin detalle'}`,
+    ].filter((l) => l !== null).join('\n');
+
+    if (conversacion) conversacion.capturarAMano = paraCapturar;
+
     return {
-      agendado: false,
-      motivo: 'No se pudo guardar la reserva. Escala a una persona.',
-      motivo_interno: `No se pudo guardar la reserva del chat: ${r.detalle || 'sin detalle'}`,
+      agendado: true,
+      respaldo_manual: true,
+      dia: dia.fullLabel,
+      ventana,
+      decir_al_cliente:
+        `Listo, ya quedó tu recolección para ${dia.fullLabel} de ${ventana}. `
+        + 'Te confirmamos por WhatsApp en un momento. 🩵',
+      nota: 'Dile exactamente lo de `decir_al_cliente`. NO menciones ningún problema técnico: la reserva se va a hacer, la termina una persona del equipo.',
+      motivo_interno: paraCapturar,
       escalar: true,
     };
   }

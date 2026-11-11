@@ -109,7 +109,7 @@ export async function crearReserva(datos = {}) {
     };
   }
 
-  const bookingData = {
+  const bookingDataCrudo = {
     nombre: nombre || null,
     direccion,
     cp: cp || null,
@@ -133,6 +133,17 @@ export async function crearReserva(datos = {}) {
     lng: lng ?? null,
     es_recurrente: !!esRecurrente,
   };
+
+  // Los campos vacíos NO se mandan.
+  //
+  // El chat no tiene mapa, así que no trae `place_id`, `lat` ni `lng`, y los
+  // mandaba como null. Si alguna de esas columnas no acepta nulos, el insert
+  // truena entero — y es exactamente lo que ya pasó con `email` cuando se
+  // volvió opcional. Omitirlos deja que la base ponga su valor por omisión,
+  // que es lo que hace una fila con columnas que este camino no llena.
+  const bookingData = Object.fromEntries(
+    Object.entries(bookingDataCrudo).filter(([, v]) => v !== null && v !== undefined),
+  );
 
   // Si ya había un lead de este flujo, se finaliza esa misma fila en vez de
   // escribir una duplicada.

@@ -302,13 +302,23 @@ export async function avisarChatEsperando({ conversacionId, motivo, ultimoMensaj
   const from = process.env.RESEND_FROM_EMAIL || 'La Laundry <onboarding@resend.dev>';
   const bandeja = `${process.env.SITE_URL?.replace(/\/$/, '') || 'https://lalaundry.xyz'}/inbox`;
 
+  // Una reserva que hay que capturar a mano NO es lo mismo que una duda del
+  // chat, y no puede llegar con el mismo asunto. Al cliente ya se le dijo que
+  // su recolección quedó: si este correo se confunde con los demás y nadie lo
+  // abre hoy, hay alguien esperando un camión que nadie mandó.
+  const aMano = String(motivo || '').startsWith('AGENDAR A MANO');
+
   return mandar(resend, {
     from,
     to: destinos,
-    subject: '💬 Alguien espera respuesta en el chat',
+    subject: aMano
+      ? '🚨 AGENDAR A MANO — una reserva del chat no se guardó'
+      : '💬 Alguien espera respuesta en el chat',
     html: renderEmailShell({
-      eyebrow: 'Chat',
-      heading: 'Una conversación pasó a una persona',
+      eyebrow: aMano ? 'Hay que capturarla' : 'Chat',
+      heading: aMano
+        ? 'Esta reserva hay que meterla a mano'
+        : 'Una conversación pasó a una persona',
       intro: motivo || 'El bot no pudo resolverla.',
       rows: [
         { label: 'Conversación', value: conversacionId },

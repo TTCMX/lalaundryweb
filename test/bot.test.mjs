@@ -460,10 +460,27 @@ t('y una vacía', direccionParcial('') === null && direccionParcial(null) === nu
     });
     const r = await correrHerramienta('agendar_recoleccion', datos,
       { supabase: supabaseFalso(CP), reservar: falla, conversacion }, lunes);
-    t('un error de la base no se da por agendado', r.agendado === false);
-    t('al cliente se le dice algo que entienda', !/null value|column|23502/i.test(r.motivo));
-    t('pero al equipo le llega el motivo de verdad',
+    // RESPALDO MANUAL. El cliente ya dio dirección, nombre, teléfono y eligió
+    // horario: decirle "no se pudo" después de todo eso es perderlo, y por un
+    // problema nuestro que él no puede resolver. La reserva se hace igual, la
+    // captura una persona con los datos que ya están en la conversación.
+    t('para el cliente la reserva quedó', r.agendado === true);
+    t('marcada como respaldo manual, para que no se confunda con una guardada',
+      r.respaldo_manual === true);
+    t('y no se le menciona ningún problema',
+      !/problema|t[eé]cnico|no se pudo|fall|error|null value|column|23502/i.test(r.decir_al_cliente));
+    t('se le confirma el día y que le escriben por WhatsApp',
+      r.decir_al_cliente.includes('quedó') && /whatsapp/i.test(r.decir_al_cliente));
+
+    // Y lo que sostiene la promesa: el aviso con todo para capturarla.
+    t('al equipo le llega marcado para capturar a mano',
+      conversacion.escalar.startsWith('AGENDAR A MANO'));
+    t('con los datos completos',
+      ['Katherine', '5512345678', 'José Martí', 'Ventana'].every((x) => conversacion.escalar.includes(x)));
+    t('y con el motivo de verdad, que al cliente no se le enseña',
       conversacion.escalar.includes('23502') && conversacion.escalar.includes('email'));
+    t('diciendo que al cliente ya se le prometió',
+      /ya se le dijo/i.test(conversacion.escalar));
   }
   {
     const truena = async () => { throw new Error('base caída'); };
