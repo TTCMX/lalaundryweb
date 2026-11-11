@@ -80,12 +80,24 @@ export default async function handler(req, res) {
       }
 
       if (accion === 'bandeja') {
-        const { data: convs } = await supabase
+        // El motivo del escalamiento es de la migración 20261111. Mientras no
+        // corra, la columna no existe y PostgREST devuelve error: la bandeja
+        // tiene que seguir abriendo igual, sin esa columna. Código que exige
+        // una migración que todavía no corrió es un despliegue que rompe algo
+        // en el camino.
+        const COLUMNAS = 'id, estado, nombre, telefono, email, creado_en, tocado_en';
+        const lista = (cols) => supabase
           .from('chat_conversaciones')
-          .select('id, estado, nombre, telefono, email, creado_en, tocado_en')
+          .select(cols)
           .neq('estado', 'cerrada')
           .order('tocado_en', { ascending: false })
           .limit(50);
+
+        let { data: convs, error: errLista } = await lista(`${COLUMNAS}, motivo_escalamiento`);
+        if (errLista) {
+          console.warn('[chat] bandeja sin motivo_escalamiento (¿falta la migración?)');
+          ({ data: convs } = await lista(COLUMNAS));
+        }
         // Los mensajes de todas en una consulta: con una por conversación
         // serían cincuenta viajes para pintar una lista.
         const ids = (convs || []).map((c) => c.id);
@@ -280,9 +292,23 @@ const aFormatoApi = (m) => ({
 });
 
 async function escalar(supabase, conversacionId, motivo, ultimoMensaje) {
+  // El motivo se GUARDA, no solo se manda por correo. Un correo que no llega
+  // o que nadie abre deja la conversación en "humano" sin que nadie sepa por
+  // qué: si fue una queja, una zona sin cobertura o un error de la base. La
+  // bandeja lo muestra; el cliente nunca lo ve.
+  // El cambio de estado va solo y primero: es lo que de verdad importa —que
+  // el bot se calle y la conversación aparezca en la bandeja— y no se puede
+  // caer porque una columna nueva todavía no exista.
   await supabase.from('chat_conversaciones')
     .update({ estado: 'humano', tocado_en: new Date().toISOString() })
     .eq('id', conversacionId);
+
+  // Y el motivo aparte, best-effort. Si la migración 20261111 no ha corrido,
+  // esto falla y el escalamiento sigue en pie.
+  const { error: errMotivo } = await supabase.from('chat_conversaciones')
+    .update({ motivo_escalamiento: String(motivo || '').slice(0, 500) || null })
+    .eq('id', conversacionId);
+  if (errMotivo) console.warn('[chat] no se pudo guardar el motivo (¿falta la migración?)');
 
   // El cliente se queda viendo el chat: si nadie abre la bandeja, se queda
   // esperando. El correo es lo que convierte "el bot escaló" en que alguien
