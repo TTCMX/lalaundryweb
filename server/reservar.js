@@ -19,6 +19,7 @@ import {
   avisarFalloDeCorreo, avisarFalloDeOperaciones, esFalla,
 } from './email.js';
 import { isSlotFull, getMaxBookingsPerSlot } from './capacity.js';
+import { horarioBloqueado } from './bloqueos.js';
 import { notifyOpsApp } from './opsApp.js';
 import { normalizePhone } from './phone.js';
 import { correoValido, limpiarCorreo } from './correo.js';
@@ -100,6 +101,18 @@ export async function crearReserva(datos = {}) {
     if (yaHecha) {
       return { ok: true, id: yaHecha.id, yaConfirmada: true };
     }
+  }
+
+  // UN HORARIO BLOQUEADO DESDE OPERACIONES NO SE AGENDA, venga de donde
+  // venga. El formulario y el bot ya no lo ofrecen, pero esta es la puerta
+  // que no se puede saltar: una pestaña abierta desde antes del bloqueo, o
+  // alguien mandando la petición a mano, terminan aquí. Va después del
+  // repetido a propósito: si la reserva ya existía, sigue existiendo.
+  if (await horarioBloqueado(fecha, horaLabel)) {
+    return {
+      ok: false, error: 'horario-bloqueado', http: 409,
+      mensaje: 'Ese horario ya no está disponible. Elige otro.',
+    };
   }
 
   if (await isSlotFull(diaLabel, horaLabel, bookingId)) {

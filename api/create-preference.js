@@ -1,6 +1,7 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { createPreference, getDepositAmount } from '../server/mercadopago.js';
 import { isSlotFull, getMaxBookingsPerSlot } from '../server/capacity.js';
+import { horarioBloqueado } from '../server/bloqueos.js';
 import { normalizePhone } from '../server/phone.js';
 import { rechazar } from '../server/cors.js';
 import { limitar } from '../server/rateLimit.js';
@@ -41,6 +42,11 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (await horarioBloqueado(fecha, horaLabel)) {
+      res.status(409).json({ error: 'horario-bloqueado', message: 'Ese horario ya no está disponible. Elige otro.' });
+      return;
+    }
+
     if (await isSlotFull(diaLabel, horaLabel, bookingId)) {
       res.status(409).json({
         error: 'slot-full',

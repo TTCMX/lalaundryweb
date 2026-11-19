@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../server/supabaseClient.js';
 import { getMaxBookingsPerSlot } from '../server/capacity.js';
+import { leerBloqueos } from '../server/bloqueos.js';
 import { rechazar } from '../server/cors.js';
 import { limitar } from '../server/rateLimit.js';
 
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
   // tope es holgado: frena un barrido, no el uso normal.
   if (limitar(req, res, { max: 60, nombre: 'slot-availability' })) return;
 
-  const { diaLabels } = req.body || {};
+  const { diaLabels, fechas } = req.body || {};
   if (!Array.isArray(diaLabels) || !diaLabels.length) {
     res.status(400).json({ error: 'diaLabels array is required' });
     return;
@@ -35,7 +36,16 @@ export default async function handler(req, res) {
       counts[row.dia_label][row.hora_label] = (counts[row.dia_label][row.hora_label] || 0) + 1;
     }
 
-    res.status(200).json({ counts, max: getMaxBookingsPerSlot() });
+    // Los horarios que el equipo bloqueó desde operaciones. Van aparte del
+    // conteo y por fecha (no por etiqueta de día): el formulario sabe la
+    // fecha de cada día y así no hay que adivinar cuál es "lunes 24".
+    const iso = (Array.isArray(fechas) ? fechas : [])
+      .filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(String(f))).sort();
+    const bloqueos = iso.length
+      ? (await leerBloqueos(iso[0], iso.at(-1))).map(({ fecha, ventana }) => ({ fecha, ventana: ventana || null }))
+      : [];
+
+    res.status(200).json({ counts, max: getMaxBookingsPerSlot(), bloqueos });
   } catch (err) {
     console.error('[slot-availability]', err);
     res.status(500).json({ error: 'internal-error' });

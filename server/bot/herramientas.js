@@ -25,6 +25,7 @@ import { formasDePago, avisoPago } from '../pago.js';
 import { crearReserva } from '../reservar.js';
 import { estadoDePedido } from '../opsApp.js';
 import { cuandoContestan } from '../atencion.js';
+import { leerBloqueos, ventanaBloqueada } from '../bloqueos.js';
 
 export const URL_MI_ORDEN = 'https://app.lalaundry.xyz/miorden';
 
@@ -405,11 +406,28 @@ async function cotizar({ articulos, zona }) {
   return resultado;
 }
 
-async function horarios_disponibles({ zona }, _deps, ahora = new Date()) {
+async function horarios_disponibles({ zona }, deps = {}, ahora = new Date()) {
   const z = String(zona || '').trim().toUpperCase();
-  const dias = diasDisponibles(z, ahora);
+  const calendario = diasDisponibles(z, ahora);
+
+  // Lo que el equipo bloqueó desde operaciones no se ofrece. Se quita aquí y
+  // no en el prompt: si se le pidiera al modelo que se acordara, tarde o
+  // temprano ofrecería justo el martes que está cerrado.
+  const leer = deps.leerBloqueos || leerBloqueos;
+  const bloqueos = calendario.length
+    ? await leer(calendario[0].isoDate, calendario.at(-1).isoDate)
+    : [];
+  const dias = calendario
+    .map((d) => ({ ...d, horas: d.horas.filter((h) => !ventanaBloqueada(bloqueos, d.isoDate, h.label)) }))
+    .filter((d) => d.horas.length);
+
   if (!dias.length) {
-    return { dias: [], nota: 'No hay horarios que ofrecer para esa zona.' };
+    return {
+      dias: [],
+      nota: calendario.length
+        ? 'No hay horarios disponibles en los próximos días. No inventes uno: escala a una persona para que lo coordine.'
+        : 'No hay horarios que ofrecer para esa zona.',
+    };
   }
 
   const comoSeLlama = (d, h) => ({
@@ -613,6 +631,17 @@ async function agendar_recoleccion(entrada, deps = {}, ahora = new Date()) {
     // ya se apartó completo y hay que ofrecer otro. Decía "no se pudo
     // guardar", que suena a que algo se rompió — y se leyó así durante dos
     // días, mientras el guardado funcionaba perfecto.
+    // Bloqueado desde operaciones entre que se ofreció y que se agendó: es lo
+    // mismo que lleno para el cliente. Tampoco es una falla, y tampoco va al
+    // respaldo manual — capturarla a mano sería agendar justo lo que el
+    // equipo cerró.
+    if (r.error === 'horario-bloqueado') {
+      return {
+        agendado: false,
+        cupo_lleno: true,
+        motivo: 'Ese horario ya no está disponible, no es un error. Díselo así —"ese horario se acaba de cerrar"— y ofrécele otras dos de horarios_disponibles.',
+      };
+    }
     if (r.error === 'slot-full') {
       return {
         agendado: false,

@@ -7,6 +7,7 @@ import InvitacionMembresia from '../components/InvitacionMembresia.jsx';
 import { loadGoogleMaps, onGoogleMapsAuthFailure, googleMapsAuthFailed } from '../lib/googleMaps.js';
 import styles from './Agendar.module.css';
 import { correoValido, sugerenciaCorreo, limpiarCorreo } from '../../server/correo.js';
+import { ventanaBloqueada } from '../../server/bloqueos.js';
 import { WHATSAPP_LEGIBLE, whatsappURL } from '../lib/contacto.js';
 // Cómo se paga depende del transporte de la ventana elegida: con Uber Direct
 // no hay quién reciba efectivo. Ver server/pago.js.
@@ -96,6 +97,9 @@ export default function Agendar() {
   const [submitError, setSubmitError] = useState('');
   const [slotCounts, setSlotCounts] = useState({});
   const [slotMax, setSlotMax] = useState(5);
+  // Lo que el equipo bloqueó desde operaciones. Se pinta igual que lleno: al
+  // cliente le da lo mismo por qué no hay, solo necesita ver que no hay.
+  const [bloqueos, setBloqueos] = useState([]);
   const [esRecurrente, setEsRecurrente] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
 
@@ -304,12 +308,16 @@ export default function Agendar() {
     fetch('/api/slot-availability', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ diaLabels: DIAS.map((d) => d.fullLabel) }),
+      body: JSON.stringify({
+        diaLabels: DIAS.map((d) => d.fullLabel),
+        fechas: DIAS.map((d) => d.isoDate),
+      }),
     })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (cancelled || !data) return;
         setSlotCounts(data.counts || {});
+        setBloqueos(Array.isArray(data.bloqueos) ? data.bloqueos : []);
         if (data.max) setSlotMax(data.max);
       })
       .catch(() => {});
@@ -457,6 +465,7 @@ export default function Agendar() {
   };
 
   const selectedHoraCount = slotCounts[DIAS[diaSel]?.fullLabel]?.[HORAS[horaSel]?.label] || 0;
+  const selectedBloqueada = ventanaBloqueada(bloqueos, DIAS[diaSel]?.isoDate, HORAS[horaSel]?.label);
   const requiresTelefono = step === 0 && !telefono;
   const requiresDireccion = step === 1 && (!direccion || cobertura !== 'covered');
   // El correo dejó de ser opcional: es el canal por el que el cliente se
@@ -464,7 +473,7 @@ export default function Agendar() {
   const correoMal = step === 2 && email.trim().length > 0 && !correoValido(email);
   const sugerencia = step === 2 ? sugerenciaCorreo(email) : null;
   const requiresNombre = step === 2 && (!nombre.trim() || !correoValido(email));
-  const requiresHorario = step === 3 && selectedHoraCount >= slotMax;
+  const requiresHorario = step === 3 && (selectedHoraCount >= slotMax || selectedBloqueada);
   // El vehículo se pide por adelantado, así que sin esta respuesta la
   // recolección puede llegar en moto a un pedido que no cabe.
   const preguntarTamano = step === 3 && !!HORAS[horaSel] && !HORAS[horaSel].propio;
@@ -777,7 +786,8 @@ export default function Agendar() {
               <div className={styles.horasGrid}>
                 {HORAS.map((hora, i) => {
                   const count = slotCounts[DIAS[diaSel].fullLabel]?.[hora.label] || 0;
-                  const isFull = count >= slotMax;
+                  const bloqueada = ventanaBloqueada(bloqueos, DIAS[diaSel].isoDate, hora.label);
+                  const isFull = count >= slotMax || bloqueada;
                   return (
                     <button
                       key={hora.label}
@@ -789,7 +799,7 @@ export default function Agendar() {
                       onClick={() => setHoraSel(i)}
                       disabled={isFull}
                     >
-                      {isFull ? 'Lleno' : hora.label}
+                      {bloqueada ? 'No disponible' : isFull ? 'Lleno' : hora.label}
                       {/* Cada ventana dice quién recoge: conviene verlo antes
                           de elegir, no después, porque solo la propia tiene
                           hora comprometida. */}
