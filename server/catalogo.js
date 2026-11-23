@@ -78,7 +78,7 @@ export const CATALOGO = [
     sinonimos: ['seda', 'lino'] },
 
   // Otros servicios
-  { nombre: 'Planchado', categoria: 'Otros servicios', precio: 35, unidad: 'pieza', sinonimos: ['planchar', 'plancha'] },
+  { nombre: 'Planchado', categoria: 'Otros servicios', precio: 36, unidad: 'pieza', sinonimos: ['planchar', 'plancha'] },
   { nombre: 'Planchado largo', categoria: 'Otros servicios', precio: 60, unidad: 'pieza',
     sinonimos: ['planchado de prenda larga'] },
   { nombre: 'Desmanchado', categoria: 'Otros servicios', precio: 100, unidad: 'pieza',
