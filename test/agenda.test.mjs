@@ -189,7 +189,7 @@ t('una fecha pasada no pasa',
 // ── Zonas ─────────────────────────────────────────────────────────────────
 t('F y G no tienen tintorería', !hayTintoreria('F') && !hayTintoreria('G'));
 t('las demás sí', ['A', 'B', 'C', 'D', 'E'].every(hayTintoreria));
-t('los mínimos por zona', minimoDeZona('A') === 300 && minimoDeZona('C') === 600 && minimoDeZona('G') === 1000);
+t('los mínimos por zona', minimoDeZona('A') === 300 && minimoDeZona('C') === 600 && minimoDeZona('G') === 900);
 t('una zona que no existe no tiene mínimo', minimoDeZona('Z') === null);
 
 // ── Transporte ────────────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ t('las siete zonas tienen mínimo y costo',
   Object.keys(MINIMO_POR_ZONA).every((z) => Number.isFinite(COSTO_TRANSPORTE_POR_ZONA[z])));
 t('los mínimos acordados', minimoDeZona('A') === 300 && minimoDeZona('B') === 300
   && minimoDeZona('C') === 600 && minimoDeZona('D') === 600
-  && minimoDeZona('E') === 1000 && minimoDeZona('F') === 1000 && minimoDeZona('G') === 1000);
+  && minimoDeZona('E') === 600 && minimoDeZona('F') === 900 && minimoDeZona('G') === 900);
 t('y los costos', costoTransporteDeZona('A') === 100 && costoTransporteDeZona('C') === 180
   && costoTransporteDeZona('G') === 250);
 
@@ -216,9 +216,11 @@ t('sin subtotal se contesta la regla, no el cobro',
 t('la zona en minúsculas también sirve', transporteDeZona('c', 600).gratis === true);
 t('una zona que no existe no tiene transporte', transporteDeZona('Z', 100) === null);
 
-t('los grupos salen de la tabla y no al revés', gruposDeTransporte().length === 3);
+// E comparte mínimo con C y D ($600) pero no costo ($250 contra $180): va
+// en su propio grupo.
+t('los grupos salen de la tabla y no al revés', gruposDeTransporte().length === 4);
 t('y agrupan las zonas que comparten regla',
-  gruposDeTransporte().map((g) => g.zonas.join('')).join('|') === 'AB|CD|EFG');
+  gruposDeTransporte().map((g) => g.zonas.join('')).join('|') === 'AB|CD|E|FG');
 t('cada grupo trae sus dos números',
   gruposDeTransporte().every((g) => Number.isFinite(g.minimo) && Number.isFinite(g.costo)));
 

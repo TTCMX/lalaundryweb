@@ -77,9 +77,10 @@ export const ventanaDisponible = (zona, diaSemana, rango) => {
 // la tabla de src/pages/Cobertura.jsx decía C: 300 y E: 500, y es la que lee
 // el cliente antes de agendar. O sea que a alguien de la zona C se le
 // anunciaba transporte gratis desde $300 y el formulario le sugería $500.
-// Los buenos son éstos (A y B $300, C y D $600, el resto $1,000), y ahora la
+// Los buenos son éstos (A y B $300; C, D y E $600; F y G $900 desde el
+// 26-nov-2026, antes E, F y G estaban en $1,000), y ahora la
 // página de cobertura se dibuja de aquí para que no vuelvan a separarse.
-export const MINIMO_POR_ZONA = { A: 300, B: 300, C: 600, D: 600, E: 1000, F: 1000, G: 1000 };
+export const MINIMO_POR_ZONA = { A: 300, B: 300, C: 600, D: 600, E: 600, F: 900, G: 900 };
 
 // Lo que cuesta el transporte cuando el pedido no llega al mínimo. Vivía
 // suelto en la página de cobertura, que era el único lugar del sitio que lo

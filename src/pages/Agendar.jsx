@@ -11,9 +11,14 @@ import { ventanaBloqueada } from '../../server/bloqueos.js';
 import { WHATSAPP_LEGIBLE, whatsappURL } from '../lib/contacto.js';
 // Cómo se paga depende del transporte de la ventana elegida: con Uber Direct
 // no hay quién reciba efectivo. Ver server/pago.js.
-import { avisoPago, textoPagoConMomento } from '../../server/pago.js';
+import { avisoPago, formasDePago } from '../../server/pago.js';
+// Precios que se enseñan en el formulario: salen de /api/tarifas (tablas de la
+// app de operaciones) y, mientras llegan o si fallan, del código.
+import { tarifasDelCodigo, estimar, faltaPoco } from '../../server/tarifas.js';
+import { pesos } from '../../server/precios-publicos.js';
+import TarjetaPrecios from '../components/TarjetaPrecios.jsx';
 import {
-  diasDisponibles, formatoPesos, minimoDeZona, hayTintoreria,
+  diasDisponibles, hayTintoreria,
   // ESTE FALTABA, Y ERA EL CRASH. Se usa en el banner de cobertura, que solo
   // se dibuja cuando el código postal sale cubierto: o sea, justo al validar
   // la dirección. Sin el import, React lanza ReferenceError a media pintada,
@@ -21,7 +26,7 @@ import {
   // suelto cuando las reglas de agenda salieron de este archivo a
   // server/agenda.js, y no se notó porque no hay linter en este proyecto y
   // el único camino que lo toca es el feliz: dirección válida, zona cubierta.
-  ZONAS_TRANSPORTE_PROPIO, costoTransporteDeZona,
+  ZONAS_TRANSPORTE_PROPIO,
   MENSAJE_SIN_TINTORERIA, MENSAJE_UBER_DIRECT,
 } from '../../server/agenda.js';
 
@@ -90,6 +95,18 @@ export default function Agendar() {
     setHoraSel(0);
   }, [zona]);
   const [detalles, setDetalles] = useState('');
+  // Cuántos pares de tenis trae (opcional): solo sirve para enseñarle el total
+  // estimado y para que operaciones lo sepa de antemano.
+  const [pares, setPares] = useState(0);
+  const [tarifas, setTarifas] = useState(tarifasDelCodigo);
+  useEffect(() => {
+    let vivo = true;
+    fetch('/api/tarifas')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((t) => { if (vivo && t?.tenis?.escalones?.length && t.transporte && t.minimos) setTarifas(t); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, []);
   // Volumen del pedido: decide si Uber Direct manda moto o automóvil. Solo se
   // pregunta cuando la recolección es con ellos.
   const [tamano, setTamano] = useState(null); // 'moto' | 'auto'
@@ -404,7 +421,8 @@ export default function Agendar() {
     // operaciones) junto con la ventana que eligió el cliente, porque ahí
     // hora_label no es un horario comprometido como en el transporte propio.
     const horaElegida = HORAS[horaSel];
-    const detallesFinal = horaElegida && !horaElegida.propio
+    const notaPares = pares > 0 ? `Tenis: ${pares} ${pares === 1 ? 'par' : 'pares'} (dato del cliente al agendar).` : null;
+    const detallesBase = horaElegida && !horaElegida.propio
       ? [
           `Transporte por tercero. Horario preferido: ${horaElegida.label}.`,
           // El vehículo se pide por adelantado: va en las notas para que
@@ -419,6 +437,7 @@ export default function Agendar() {
           .filter(Boolean)
           .join(' ')
       : detalles || undefined;
+    const detallesFinal = [notaPares, detallesBase].filter(Boolean).join(' ') || undefined;
     const payload = {
       bookingId: bookingIdRef.current,
       telefono,
@@ -505,9 +524,14 @@ export default function Agendar() {
 
   return (
     <section className={styles.section}>
-      <div className={styles.container}>
+      <div className={`${styles.container} ${styles.containerAncho}`}>
         <h1 className={styles.title}>Agenda tu recolección</h1>
 
+        <div className={styles.layout}>
+        <div className={styles.lateral}>
+          <TarjetaPrecios tarifas={tarifas} zona={cobertura === 'covered' ? zona : null} />
+        </div>
+        <div className={styles.principal}>
         <div className={styles.stepper}>
           <div className={styles.stepperLine} />
           {STEP_LABELS.map((label, i) => (
@@ -644,9 +668,21 @@ export default function Agendar() {
                         pedido más chico se acepta igual, nada más paga
                         transporte. Es el monto a partir del cual el
                         transporte va gratis. */}
-                    {minimoDeZona(zona) &&
-                      ` Transporte gratis desde ${formatoPesos(minimoDeZona(zona))} en tu zona; debajo de eso cuesta ${formatoPesos(costoTransporteDeZona(zona))}.`}
                   </span>
+                </div>
+              )}
+              {/* La zona y lo que cuesta el envío ahí. NO es un pedido mínimo
+                  —un pedido más chico se acepta, nada más paga envío— y
+                  decirlo así espanta: es desde cuánto el envío va gratis. */}
+              {cobertura === 'covered' && zona && tarifas.minimos[zona] != null && (
+                <div className={styles.zonaBox}>
+                  <div className={styles.zonaTitulo}>Tu zona: {zona}</div>
+                  <div className={styles.zonaFila}>
+                    <span>Envío gratis a partir de</span><b>{pesos(tarifas.minimos[zona])}</b>
+                  </div>
+                  <div className={styles.zonaFila}>
+                    <span>Si no llegas, el envío cuesta</span><b>{pesos(tarifas.transporte[zona])}</b>
+                  </div>
                 </div>
               )}
               {cobertura === 'externo' && (
@@ -864,6 +900,37 @@ export default function Agendar() {
               <p className={styles.stepSubtextTight}>
                 Opcional — instrucciones especiales para la recolección o tus prendas.
               </p>
+
+              {/* Cuántos pares de tenis, para enseñarle el total estimado en
+                  vivo. Opcional: si trae otras cosas, se cotizan al recibirlas. */}
+              <div className={styles.paresBox}>
+                <div className={styles.paresFila}>
+                  <span className={styles.paresLabel}>¿Cuántos pares de tenis?</span>
+                  <div className={styles.paresStepper}>
+                    <button type="button" className={styles.paresBoton} onClick={() => setPares((n) => Math.max(0, n - 1))} disabled={pares === 0} aria-label="Uno menos">−</button>
+                    <span className={styles.paresNumero} aria-live="polite">{pares}</span>
+                    <button type="button" className={styles.paresBoton} onClick={() => setPares((n) => Math.min(50, n + 1))} aria-label="Uno más">+</button>
+                  </div>
+                </div>
+                {pares > 0 && (() => {
+                  const e = estimar(tarifas, { pares, zona });
+                  return (
+                    <div className={styles.estimado}>
+                      <div className={styles.estimadoFila}><span>Tenis ({pares} {pares === 1 ? 'par' : 'pares'})</span><span>{pesos(e.subtotal)}</span></div>
+                      {e.envio !== null && (
+                        <div className={styles.estimadoFila}>
+                          <span>Envío</span>
+                          <span className={e.gratis ? styles.gratis : undefined}>{e.gratis ? 'Envío gratis' : pesos(e.envio)}</span>
+                        </div>
+                      )}
+                      <div className={`${styles.estimadoFila} ${styles.estimadoTotal}`}><span>Total estimado</span><span>{pesos(e.total)}</span></div>
+                      {faltaPoco(e) && (
+                        <div className={styles.faltaPoco}>Te faltan {pesos(e.faltan)} para envío gratis</div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
               <span className={styles.optionalBadge}>Puedes dejarlo en blanco</span>
               <textarea
                 className={styles.textarea}
@@ -916,13 +983,38 @@ export default function Agendar() {
                     {DIAS[diaSel].fullLabel}, {HORAS[horaSel].label}
                   </span>
                 </div>
+                {pares > 0 && (() => {
+                  const e = estimar(tarifas, { pares, zona });
+                  return (
+                    <div className={styles.resumenRow}>
+                      <span className={styles.resumenLabel}>Total estimado</span>
+                      <span className={styles.resumenValue}>
+                        {pesos(e.total)}{' '}
+                        <span className={styles.resumenNota}>
+                          ({pares} {pares === 1 ? 'par' : 'pares'}{e.envio === null ? '' : e.gratis ? ', envío gratis' : ` + ${pesos(e.envio)} de envío`})
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })()}
+                {/* Las formas de pago dependen de quién entrega: en la ruta
+                    propia se puede pagar con tarjeta o efectivo en la puerta;
+                    con Uber Direct, solo a distancia. Lo decide la ventana
+                    que eligió (la de 8 a 10pm es la ruta propia). */}
                 <div className={styles.resumenRow}>
-                  <span className={styles.resumenLabel}>Pago</span>
+                  <span className={styles.resumenLabel}>Formas de pago</span>
                   <span className={styles.resumenValue}>
-                    {textoPagoConMomento(HORAS[horaSel]?.propio ? 'propio' : 'uber_direct')}
+                    {(() => {
+                      const f = formasDePago(HORAS[horaSel]?.propio ? 'propio' : 'uber_direct');
+                      const txt = f.length > 1 ? `${f.slice(0, -1).join(', ')} o ${f[f.length - 1]}` : f[0];
+                      return txt.charAt(0).toUpperCase() + txt.slice(1);
+                    })()}
                   </span>
                 </div>
               </div>
+              <p className={styles.listoText} style={{ marginTop: 14 }}>
+                Te confirmamos por WhatsApp; el link de pago te llega mientras trabajamos tu orden.
+              </p>
               <InvitacionMembresia telefono={telefono} />
               {/* El pedido acaba de crearse, así que ya se puede seguir: en
                   /miorden se entra con el mismo teléfono que puso arriba. */}
@@ -956,6 +1048,8 @@ export default function Agendar() {
             </div>
           </div>
         )}
+        </div>
+        </div>
       </div>
     </section>
   );
